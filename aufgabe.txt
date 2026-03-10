@@ -1,0 +1,20 @@
+A. THEMA: LERNZEIT-MANAGER
+Das Absolvieren eines komplexen und flexiblen Studiums erfordert ein hohes Maß an Zeitmanagement.
+Insbesondere wenn das Studium berufsbegleitend erfolgt. Für Lernen und Prüfungsvorbereitung muss
+ausreichend Zeit eingeräumt werden, in den Modulhandbüchern ist dazu jeweils der vorgesehene Workload
+genannt. Daher müssen diese Zeiten gut eingeplant werden. Aber es muss auch geprüft werden, ob die Planung
+eingehalten wurde oder ob es sinnvoll ist die Planung anzupassen.
+Im Rahmen dieses Projekts soll eine Anwendung konzipiert und prototypisch umgesetzt werden, die
+Studierenden bei der Lernzeitplanung, der Nachverfolgung der Lernzeit und der Einhaltung von selbstgesteckten
+Zielen unterstützt.
+
+Folgende Anwendungsfälle sollen dabei gezielt berücksichtigt werden:
+•Festlegen von Lernzielen für einen Zeitraum von sechs Monaten;
+•Grobplanung von Lernzeiten für einen Zeitraum von sechs Monaten;
+•Detailplanung von Lernzeiten und Zwischenzielen für einen Zeitraum von einem Monat;
+•Nachverfolgung der Lernzeit mit einer Art Stoppuhr, mit der die ungestörte Lernzeit gemessen wird;
+•Nachverfolgung der erreichten Lernziele, bspw. abgeschlossenes Modul, bestandene Klausur,
+eingereichter Projektbericht usw.;
+•Veranschaulichung der Zielerreichung bzgl. eingesetzter Lernzeit und erreichter Ziele;
+•automatische Erinnerung an geplante Zeiten und Ziele, bei ungeplanter Inaktivität.
+
