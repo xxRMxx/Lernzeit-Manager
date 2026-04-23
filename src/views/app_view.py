@@ -7,11 +7,13 @@ from src.store.store import Store
 from src.store.actions import SetActiveView
 from src.types.app_state import AppState
 from src.logic.reminder import get_reminders
+from src.logic.stopwatch import elapsed_seconds, format_seconds
 
 from src.views.dashboard.dashboard_view import build_dashboard_view
 from src.views.goals.goals_view import build_goals_view
 from src.views.planning.planning_view import build_planning_view
 from src.views.stopwatch.stopwatch_view import build_stopwatch_view
+import src.views.stopwatch.stopwatch_view as _sw_module
 from src.views.milestones.milestones_view import build_milestones_view
 
 _VIEWS = {
@@ -87,6 +89,18 @@ def build_app(page: ft.Page, store: Store) -> None:
 
     store.subscribe(render)
     render(store.state)
+
+    # Background-Task für den Stoppuhr-Sekundentakt
+    async def timer_tick_loop():
+        while True:
+            await asyncio.sleep(1)
+            ref = _sw_module._timer_ref["text"]
+            if store.state.stopwatch.phase == "running" and ref is not None:
+                secs = elapsed_seconds(store.state.stopwatch, datetime.now())
+                ref.value = format_seconds(secs)
+                page.update(ref)
+
+    page.run_task(timer_tick_loop)
 
     # Background-Task für Erinnerungen
     async def reminder_loop():

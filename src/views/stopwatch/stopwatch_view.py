@@ -1,12 +1,14 @@
-import asyncio
 from datetime import datetime
 
 import flet as ft
 
 from src.store.store import Store
-from src.store.actions import StartStopwatch, PauseStopwatch, ResumeStopwatch, StopStopwatch
+from src.store.actions import StartStopwatch, PauseStopwatch, ResumeStopwatch, StopStopwatch, RemoveSession
 from src.types.app_state import AppState
 from src.logic.stopwatch import elapsed_seconds, format_seconds
+
+# Geteilte Referenz auf das aktive Timer-Text-Control (wird von app_view.py aktualisiert)
+_timer_ref: dict = {"text": None}
 
 
 def build_stopwatch_view(state: AppState, store: Store, page: ft.Page) -> ft.Control:
@@ -59,34 +61,43 @@ def build_stopwatch_view(state: AppState, store: Store, page: ft.Page) -> ft.Con
     def _session_row(s) -> ft.Control:
         goal = next((g for g in state.goals if g.id == s.goal_id), None)
         goal_title = goal.title if goal else "Unbekannt"
+
+        def on_delete(e, sid=s.id):
+            store.dispatch(RemoveSession(session_id=sid))
+
         return ft.ListTile(
             leading=ft.Icon(ft.Icons.HISTORY),
             title=ft.Text(goal_title, size=13),
             subtitle=ft.Text(s.started_at.strftime("%d.%m. %H:%M"), size=11),
-            trailing=ft.Text(format_seconds(s.duration_seconds), weight=ft.FontWeight.BOLD),
+            trailing=ft.Row(
+                [
+                    ft.Text(format_seconds(s.duration_seconds), weight=ft.FontWeight.BOLD),
+                    ft.IconButton(
+                        icon=ft.Icons.DELETE_OUTLINE,
+                        icon_color=ft.Colors.ERROR,
+                        icon_size=18,
+                        tooltip="Session löschen",
+                        on_click=on_delete,
+                    ),
+                ],
+                tight=True,
+                spacing=0,
+            ),
         )
 
-    # Timer-Tick als async Task
-    async def tick_loop():
-        while store.state.stopwatch.phase == "running":
-            secs = elapsed_seconds(store.state.stopwatch, datetime.now())
-            timer_text.value = format_seconds(secs)
-            timer_text.update()
-            await asyncio.sleep(1)
+    _timer_ref["text"] = timer_text
 
     def on_start(e):
         if not goal_dropdown.value:
             return
         from uuid import UUID
         store.dispatch(StartStopwatch(goal_id=UUID(goal_dropdown.value), now=datetime.now()))
-        page.run_task(tick_loop)
 
     def on_pause(e):
         store.dispatch(PauseStopwatch(now=datetime.now()))
 
     def on_resume(e):
         store.dispatch(ResumeStopwatch(now=datetime.now()))
-        page.run_task(tick_loop)
 
     def on_stop(e):
         note_field.visible = True

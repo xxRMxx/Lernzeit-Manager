@@ -10,6 +10,7 @@ from src.store.actions import (
     StartStopwatch, PauseStopwatch, ResumeStopwatch, StopStopwatch,
     SetRoughPlanEntry, AddTimeSlot, RemoveTimeSlot,
     AddMilestone, AchieveMilestone, RemoveMilestone,
+    RemoveSession,
     SetActiveView,
 )
 
@@ -111,6 +112,11 @@ def reduce(state: AppState, action: Action) -> AppState:
                 state,
                 milestones=tuple(ms for ms in state.milestones if ms.id != mid),
             )
+
+        # --- Sessions ---
+
+        case RemoveSession(session_id=sid):
+            return replace(state, sessions=tuple(s for s in state.sessions if s.id != sid))
 
         # --- Navigation ---
 

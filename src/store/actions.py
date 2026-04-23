@@ -91,6 +91,13 @@ class RemoveMilestone:
     milestone_id: UUID
 
 
+# --- Sessions ---
+
+@dataclass(frozen=True)
+class RemoveSession:
+    session_id: UUID
+
+
 # --- Navigation ---
 
 @dataclass(frozen=True)
@@ -104,5 +111,6 @@ Action = (
     StartStopwatch | PauseStopwatch | ResumeStopwatch | StopStopwatch |
     SetRoughPlanEntry | AddTimeSlot | RemoveTimeSlot |
     AddMilestone | AchieveMilestone | RemoveMilestone |
+    RemoveSession |
     SetActiveView
 )

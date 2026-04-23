@@ -21,7 +21,17 @@
     }
   ],
   "month_plans": [],
-  "sessions": [],
+  "sessions": [
+    {
+      "id": "e4de5b0d-b48d-45fa-a874-8217e5afb64c",
+      "goal_id": "aa661965-ea89-4e13-8803-5ca7cdae5340",
+      "started_at": "2026-03-15T19:19:27.027659",
+      "ended_at": "2026-03-15T19:19:27.027659",
+      "duration_seconds": 5,
+      "note": "",
+      "rating": null
+    }
+  ],
   "milestones": [],
   "stopwatch": {
     "phase": "idle",
@@ -30,5 +40,5 @@
     "accumulated_seconds": 0,
     "goal_id": null
   },
-  "active_view": "planning"
+  "active_view": "milestones"
 }
