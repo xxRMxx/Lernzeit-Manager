@@ -92,3 +92,27 @@ def test_days_remaining():
 def test_days_remaining_past():
     goal = make_goal(end=date(2025, 1, 1))
     assert days_remaining(goal, date(2025, 6, 1)) == 0
+
+
+def test_hours_per_day_needed_happy_path():
+    goal = make_goal(target_hours=100.0, end=date(2025, 1, 11))
+    sessions = (make_session(goal.id, 180000),)  # 50 hours
+    today = date(2025, 1, 1)  # 10 days remaining
+    needed = hours_per_day_needed(goal, sessions, today)
+    assert needed == 5.0  # 50 hours / 10 days
+
+
+def test_hours_per_day_needed_target_met():
+    goal = make_goal(target_hours=50.0, end=date(2025, 1, 11))
+    sessions = (make_session(goal.id, 180000),)  # 50 hours -> 0 remaining
+    today = date(2025, 1, 1)  # 10 days remaining
+    needed = hours_per_day_needed(goal, sessions, today)
+    assert needed == 0.0
+
+
+def test_hours_per_day_needed_no_days_remaining():
+    goal = make_goal(target_hours=100.0, end=date(2025, 1, 1))
+    sessions = ()
+    today = date(2025, 1, 1)  # 0 days remaining
+    needed = hours_per_day_needed(goal, sessions, today)
+    assert needed == 0.0

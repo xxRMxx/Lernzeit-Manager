@@ -62,8 +62,9 @@ def app_process(clean_state):
         yield None
         return
 
+    import sys
     proc = subprocess.Popen(
-        [str(ROOT_DIR / ".venv/bin/python3"), "main.py"],
+        [sys.executable, "main.py"],
         cwd=ROOT_DIR,
         env={**os.environ, "FLET_PORT": str(APP_PORT)},
         stdout=subprocess.DEVNULL,
