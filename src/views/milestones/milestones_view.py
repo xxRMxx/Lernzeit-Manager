@@ -7,6 +7,7 @@ from src.store.store import Store
 from src.store.actions import AddMilestone, AchieveMilestone, RemoveMilestone
 from src.types.app_state import AppState
 from src.types.milestone import Milestone
+from src.utils.date_parser import parse_german_date
 
 
 _TYPE_LABELS = {
@@ -123,9 +124,7 @@ def _milestone_form_dialog(state: AppState, store: Store, page: ft.Page) -> ft.A
                 error_text.value = "Bitte Bezeichnung eingeben."
                 error_text.update()
                 return
-            target = date.fromisoformat(
-                "-".join(reversed(date_field.value.strip().split(".")))
-            )
+            target = parse_german_date(date_field.value)
             from uuid import UUID
             ms = Milestone(
                 id=uuid4(),
