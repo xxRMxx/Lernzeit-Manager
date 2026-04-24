@@ -92,3 +92,49 @@ def test_days_remaining():
 def test_days_remaining_past():
     goal = make_goal(end=date(2025, 1, 1))
     assert days_remaining(goal, date(2025, 6, 1)) == 0
+
+
+def test_planned_vs_actual():
+    gid = uuid4()
+    other_gid = uuid4()
+
+    # 2025
+    plans = (
+        RoughPlanEntry(goal_id=gid, year=2025, month=1, planned_hours=10),
+        RoughPlanEntry(goal_id=gid, year=2025, month=2, planned_hours=15),
+        RoughPlanEntry(goal_id=gid, year=2024, month=1, planned_hours=20),  # wrong year
+        RoughPlanEntry(goal_id=other_gid, year=2025, month=1, planned_hours=5), # wrong goal
+    )
+
+    sessions = (
+        make_session(gid, 3600, datetime(2025, 1, 15)), # 1h in Jan 2025
+        make_session(gid, 7200, datetime(2025, 1, 20)), # 2h in Jan 2025
+        make_session(gid, 1800, datetime(2025, 3, 5)),  # 0.5h in Mar 2025
+        make_session(gid, 3600, datetime(2024, 1, 10)), # wrong year
+        make_session(other_gid, 3600, datetime(2025, 1, 1)), # wrong goal
+    )
+
+    result = planned_vs_actual(gid, plans, sessions, 2025)
+
+    assert len(result) == 12
+
+    # Month 1
+    assert result[0]["month"] == 1
+    assert result[0]["planned_hours"] == 10.0
+    assert result[0]["actual_hours"] == 3.0
+
+    # Month 2
+    assert result[1]["month"] == 2
+    assert result[1]["planned_hours"] == 15.0
+    assert result[1]["actual_hours"] == 0.0
+
+    # Month 3
+    assert result[2]["month"] == 3
+    assert result[2]["planned_hours"] == 0.0
+    assert result[2]["actual_hours"] == 0.5
+
+    # Other months
+    for m in range(4, 13):
+        assert result[m-1]["month"] == m
+        assert result[m-1]["planned_hours"] == 0.0
+        assert result[m-1]["actual_hours"] == 0.0
