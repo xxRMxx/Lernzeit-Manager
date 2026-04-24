@@ -1,3 +1,6 @@
 *.zip
 *.apk
 build/
+__pycache__/
+*.pyc
+main.log
