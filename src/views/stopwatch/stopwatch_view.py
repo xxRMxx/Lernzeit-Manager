@@ -11,18 +11,15 @@ from src.logic.stopwatch import elapsed_seconds, format_seconds
 _timer_ref: dict = {"text": None}
 
 
-def build_stopwatch_view(state: AppState, store: Store, page: ft.Page) -> ft.Control:
-    """Stoppuhr-Ansicht mit Echtzeit-Anzeige."""
+def _build_goal_selector(state: AppState, store: Store) -> ft.Dropdown:
     sw = state.stopwatch
-
-    # Ziel-Auswahl
     active_goals = [g for g in state.goals if g.status == "active"]
     goal_options = [
         ft.dropdown.Option(key=str(g.id), text=g.title) for g in active_goals
     ]
     selected_goal_id = str(sw.goal_id) if sw.goal_id else (str(active_goals[0].id) if active_goals else None)
 
-    goal_dropdown = ft.Dropdown(
+    return ft.Dropdown(
         label="Lernziel",
         options=goal_options,
         value=selected_goal_id,
@@ -30,32 +27,8 @@ def build_stopwatch_view(state: AppState, store: Store, page: ft.Page) -> ft.Con
         width=350,
     )
 
-    # Timer-Anzeige
-    initial_secs = elapsed_seconds(sw, datetime.now())
-    timer_text = ft.Text(
-        format_seconds(initial_secs),
-        size=80,
-        font_family="monospace",
-        weight=ft.FontWeight.BOLD,
-        color=ft.Colors.PRIMARY,
-    )
 
-    phase_label = ft.Text(
-        {"idle": "", "running": "Läuft...", "paused": "Pausiert", "finished": "Fertig"}[sw.phase],
-        size=14,
-        color=ft.Colors.ON_SURFACE_VARIANT,
-        italic=True,
-    )
-
-    note_field = ft.TextField(
-        label="Notiz zur Session (optional)",
-        multiline=True,
-        max_lines=2,
-        width=350,
-        visible=False,
-    )
-
-    # Letzten 5 Sessions anzeigen
+def _build_history_section(state: AppState, store: Store) -> ft.Column:
     recent_sessions = sorted(state.sessions, key=lambda s: s.ended_at, reverse=True)[:5]
 
     def _session_row(s) -> ft.Control:
@@ -85,7 +58,48 @@ def build_stopwatch_view(state: AppState, store: Store, page: ft.Page) -> ft.Con
             ),
         )
 
-    _timer_ref["text"] = timer_text
+    if recent_sessions:
+        return ft.Column([
+            ft.Divider(),
+            ft.Text("Letzte Sessions", size=14, weight=ft.FontWeight.BOLD),
+            *[_session_row(s) for s in recent_sessions]
+        ])
+    return ft.Column([
+        ft.Divider(),
+        ft.Text("Noch keine Sessions", color=ft.Colors.ON_SURFACE_VARIANT, size=13),
+    ])
+
+
+def _build_timer_display(state: AppState) -> tuple[ft.Text, ft.Text]:
+    sw = state.stopwatch
+    initial_secs = elapsed_seconds(sw, datetime.now())
+    timer_text = ft.Text(
+        format_seconds(initial_secs),
+        size=80,
+        font_family="monospace",
+        weight=ft.FontWeight.BOLD,
+        color=ft.Colors.PRIMARY,
+    )
+
+    phase_label = ft.Text(
+        {"idle": "", "running": "Läuft...", "paused": "Pausiert", "finished": "Fertig"}[sw.phase],
+        size=14,
+        color=ft.Colors.ON_SURFACE_VARIANT,
+        italic=True,
+    )
+    return timer_text, phase_label
+
+
+def _build_controls(state: AppState, store: Store, goal_dropdown: ft.Dropdown, page: ft.Page) -> tuple[ft.Row, ft.TextField]:
+    sw = state.stopwatch
+
+    note_field = ft.TextField(
+        label="Notiz zur Session (optional)",
+        multiline=True,
+        max_lines=2,
+        width=350,
+        visible=False,
+    )
 
     def on_start(e):
         if not goal_dropdown.value:
@@ -146,17 +160,24 @@ def build_stopwatch_view(state: AppState, store: Store, page: ft.Page) -> ft.Con
         style=ft.ButtonStyle(bgcolor=ft.Colors.BLUE, color=ft.Colors.WHITE),
     )
 
-    history_section = ft.Column(
-        [
-            ft.Divider(),
-            ft.Text("Letzte Sessions", size=14, weight=ft.FontWeight.BOLD),
-            *([_session_row(s) for s in recent_sessions]
-              if recent_sessions else [ft.Text("Noch keine Sessions", color=ft.Colors.ON_SURFACE_VARIANT)]),
-        ]
-    ) if recent_sessions else ft.Column([
-        ft.Divider(),
-        ft.Text("Noch keine Sessions", color=ft.Colors.ON_SURFACE_VARIANT, size=13),
-    ])
+    controls_row = ft.Row(
+        [start_btn, pause_btn, resume_btn, stop_btn, confirm_btn],
+        alignment=ft.MainAxisAlignment.CENTER,
+        spacing=8,
+    )
+
+    return controls_row, note_field
+
+
+def build_stopwatch_view(state: AppState, store: Store, page: ft.Page) -> ft.Control:
+    """Stoppuhr-Ansicht mit Echtzeit-Anzeige."""
+
+    goal_dropdown = _build_goal_selector(state, store)
+    timer_text, phase_label = _build_timer_display(state)
+    controls_row, note_field = _build_controls(state, store, goal_dropdown, page)
+    history_section = _build_history_section(state, store)
+
+    _timer_ref["text"] = timer_text
 
     return ft.Column(
         [
@@ -167,11 +188,7 @@ def build_stopwatch_view(state: AppState, store: Store, page: ft.Page) -> ft.Con
                         ft.Container(height=8),
                         timer_text,
                         phase_label,
-                        ft.Row(
-                            [start_btn, pause_btn, resume_btn, stop_btn, confirm_btn],
-                            alignment=ft.MainAxisAlignment.CENTER,
-                            spacing=8,
-                        ),
+                        controls_row,
                         note_field,
                     ],
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
