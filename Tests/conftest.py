@@ -58,12 +58,13 @@ def clean_state():
 @pytest.fixture(scope="session")
 def app_process(clean_state):
     """Startet die Flet-App einmalig für die gesamte Test-Session."""
+    import sys
     if _port_is_open(APP_PORT):
         yield None
         return
 
     proc = subprocess.Popen(
-        [str(ROOT_DIR / ".venv/bin/python3"), "main.py"],
+        [sys.executable, "main.py"],
         cwd=ROOT_DIR,
         env={**os.environ, "FLET_PORT": str(APP_PORT)},
         stdout=subprocess.DEVNULL,

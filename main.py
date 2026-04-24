@@ -52,6 +52,6 @@ if __name__ == "__main__":
     print("[LZ] __main__ block, starte ft.run()")
     port = int(os.environ.get("FLET_PORT", 8550))
     try:
-        ft.run(main, view=ft.AppView.WEB_BROWSER, port=port)
+        ft.run(main, view=ft.AppView.WEB_BROWSER, port=port, host="127.0.0.1")
     finally:
         _copy_log_to_sdcard()
