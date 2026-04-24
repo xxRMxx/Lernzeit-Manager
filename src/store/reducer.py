@@ -14,50 +14,41 @@ from src.store.actions import (
     SetActiveView,
 )
 
-
-def reduce(state: AppState, action: Action) -> AppState:
-    """
-    Pure function: AppState x Action -> AppState.
-    Kein IO, keine Seiteneffekte.
-    """
+def _reduce_goals(state: AppState, action: Action) -> AppState:
     match action:
-
-        # --- Ziele ---
-
         case AddGoal(goal=g):
             return replace(state, goals=(*state.goals, g))
-
         case UpdateGoalStatus(goal_id=gid, status=s):
             updated = tuple(
                 replace(g, status=s) if g.id == gid else g
                 for g in state.goals
             )
             return replace(state, goals=updated)
-
         case RemoveGoal(goal_id=gid):
             return replace(state, goals=tuple(g for g in state.goals if g.id != gid))
+        case _:
+            return state
 
-        # --- Stoppuhr ---
-
+def _reduce_stopwatch(state: AppState, action: Action) -> AppState:
+    match action:
         case StartStopwatch(goal_id=gid, now=now):
             new_sw = sw_logic.start_stopwatch(state.stopwatch, gid, now)
             return replace(state, stopwatch=new_sw)
-
         case PauseStopwatch(now=now):
             new_sw = sw_logic.pause_stopwatch(state.stopwatch, now)
             return replace(state, stopwatch=new_sw)
-
         case ResumeStopwatch(now=now):
             new_sw = sw_logic.resume_stopwatch(state.stopwatch, now)
             return replace(state, stopwatch=new_sw)
-
         case StopStopwatch(now=now, note=note, rating=rating):
             new_sw, session = sw_logic.stop_stopwatch(state.stopwatch, now, note, rating)
             new_sessions = (*state.sessions, session) if session else state.sessions
             return replace(state, stopwatch=new_sw, sessions=new_sessions)
+        case _:
+            return state
 
-        # --- Grobplanung ---
-
+def _reduce_planning(state: AppState, action: Action) -> AppState:
+    match action:
         case SetRoughPlanEntry(entry=entry):
             # Bestehenden Eintrag für (goal_id, year, month) ersetzen oder neu hinzufügen
             other = tuple(
@@ -65,9 +56,6 @@ def reduce(state: AppState, action: Action) -> AppState:
                 if not (p.goal_id == entry.goal_id and p.year == entry.year and p.month == entry.month)
             )
             return replace(state, rough_plans=(*other, entry))
-
-        # --- Detailplanung ---
-
         case AddTimeSlot(goal_id=gid, year=y, month=m, slot=slot):
             # Bestehenden MonthPlan finden oder neuen anlegen
             existing = next(
@@ -83,7 +71,6 @@ def reduce(state: AppState, action: Action) -> AppState:
             else:
                 new_plan = MonthPlan(goal_id=gid, year=y, month=m, slots=(slot,))
                 return replace(state, month_plans=(*state.month_plans, new_plan))
-
         case RemoveTimeSlot(goal_id=gid, year=y, month=m, slot_date=d):
             updated_plans = []
             for plan in state.month_plans:
@@ -93,12 +80,13 @@ def reduce(state: AppState, action: Action) -> AppState:
                 else:
                     updated_plans.append(plan)
             return replace(state, month_plans=tuple(updated_plans))
+        case _:
+            return state
 
-        # --- Meilensteine ---
-
+def _reduce_milestones(state: AppState, action: Action) -> AppState:
+    match action:
         case AddMilestone(milestone=ms):
             return replace(state, milestones=(*state.milestones, ms))
-
         case AchieveMilestone(milestone_id=mid, achieved_at=achieved_at):
             updated = tuple(
                 replace(ms, status="achieved", achieved_at=achieved_at)
@@ -106,22 +94,51 @@ def reduce(state: AppState, action: Action) -> AppState:
                 for ms in state.milestones
             )
             return replace(state, milestones=updated)
-
         case RemoveMilestone(milestone_id=mid):
             return replace(
                 state,
                 milestones=tuple(ms for ms in state.milestones if ms.id != mid),
             )
+        case _:
+            return state
 
-        # --- Sessions ---
-
+def _reduce_sessions(state: AppState, action: Action) -> AppState:
+    match action:
         case RemoveSession(session_id=sid):
             return replace(state, sessions=tuple(s for s in state.sessions if s.id != sid))
+        case _:
+            return state
 
-        # --- Navigation ---
-
+def _reduce_navigation(state: AppState, action: Action) -> AppState:
+    match action:
         case SetActiveView(view_name=name):
             return replace(state, active_view=name)
+        case _:
+            return state
+
+def reduce(state: AppState, action: Action) -> AppState:
+    """
+    Pure function: AppState x Action -> AppState.
+    Kein IO, keine Seiteneffekte.
+    """
+    match action:
+        case AddGoal() | UpdateGoalStatus() | RemoveGoal():
+            return _reduce_goals(state, action)
+
+        case StartStopwatch() | PauseStopwatch() | ResumeStopwatch() | StopStopwatch():
+            return _reduce_stopwatch(state, action)
+
+        case SetRoughPlanEntry() | AddTimeSlot() | RemoveTimeSlot():
+            return _reduce_planning(state, action)
+
+        case AddMilestone() | AchieveMilestone() | RemoveMilestone():
+            return _reduce_milestones(state, action)
+
+        case RemoveSession():
+            return _reduce_sessions(state, action)
+
+        case SetActiveView():
+            return _reduce_navigation(state, action)
 
         case _:
             return state

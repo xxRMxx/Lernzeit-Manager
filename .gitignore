@@ -1,3 +1,5 @@
 *.zip
 *.apk
 build/
+main.log
+main.log
