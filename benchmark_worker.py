@@ -1,22 +1,18 @@
-"""
-Store: einzige nicht-pure Klasse der Anwendung.
-Kapselt alle Seiteneffekte: Persistenz + Observer-Benachrichtigung.
-"""
+import time
 import threading
-from typing import Callable
-
+from pathlib import Path
+import shutil
 from src.types.app_state import AppState
-from src.store.actions import Action
+from src.store.actions import Action, SetActiveView
 from src.store.reducer import reduce
+import src.persistence.file_store as fs
 from src.persistence.file_store import load_state, save_state
 
-
-class Store:
+class StoreWorker:
     def __init__(self):
         self._state: AppState = load_state()
-        self._listeners: list[Callable[[AppState], None]] = []
+        self._listeners = []
 
-        # Async persistence setup
         self._pending_state: AppState | None = None
         self._save_event = threading.Event()
         self._save_lock = threading.Lock()
@@ -28,8 +24,7 @@ class Store:
     def state(self) -> AppState:
         return self._state
 
-    def _save_worker(self) -> None:
-        """Background thread worker to save state off the main thread."""
+    def _save_worker(self):
         while True:
             self._save_event.wait()
             self._save_event.clear()
@@ -42,23 +37,13 @@ class Store:
                 try:
                     save_state(state_to_save)
                 except Exception as e:
-                    print(f"[STORE] Background save failed: {e}")
-
-    def close(self) -> None:
-        """Waits for any pending saves to finish."""
-        # Wait a short moment to allow the save thread to pick up the event
-        if self._save_event.is_set() or self._pending_state is not None:
-            # simple sleep for graceful shutdown is acceptable here since the UI is closing
-            import time
-            time.sleep(0.1)
+                    print(f"Error saving state: {e}")
 
     def dispatch(self, action: Action) -> None:
-        """Führt eine Action aus, persistiert den neuen State (asynchron) und benachrichtigt Observer."""
         new_state = reduce(self._state, action)
         if new_state is not self._state:
             self._state = new_state
 
-            # Schedule the save asynchronously
             with self._save_lock:
                 self._pending_state = new_state
             self._save_event.set()
@@ -66,7 +51,26 @@ class Store:
             for listener in self._listeners:
                 listener(new_state)
 
-    def subscribe(self, listener: Callable[[AppState], None]) -> Callable[[], None]:
-        """Registriert einen Observer. Gibt Unsubscribe-Funktion zurück."""
-        self._listeners.append(listener)
-        return lambda: self._listeners.remove(listener)
+def run_benchmark(iterations=1000):
+    tmp_dir = Path("./benchmark_tmp")
+    if tmp_dir.exists():
+        shutil.rmtree(tmp_dir)
+    tmp_dir.mkdir()
+    fs.set_base_dir(tmp_dir)
+
+    store = StoreWorker()
+
+    start_time = time.perf_counter()
+    for i in range(iterations):
+        store.dispatch(SetActiveView(f"view_{i}"))
+
+    end_time = time.perf_counter()
+    duration = end_time - start_time
+    print(f"Total time: {duration:.4f}s")
+    print(f"Time per dispatch: {(duration/iterations)*1000:.4f}ms")
+
+    time.sleep(0.5)
+    shutil.rmtree(tmp_dir)
+
+if __name__ == "__main__":
+    run_benchmark(1000)

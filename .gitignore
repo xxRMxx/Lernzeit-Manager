@@ -1,3 +1,9 @@
 *.zip
 *.apk
 build/
+__pycache__/
+*.pyc
+*.log
+benchmark_*.py
+fix_test.py
+test_*.py

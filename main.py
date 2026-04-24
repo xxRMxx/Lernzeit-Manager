@@ -23,12 +23,21 @@ def _log(msg: str) -> None:
 
 
 def main(page: ft.Page) -> None:
-    _log("[LZ-DIAG] 1: main() gestartet")
     try:
-        page.bgcolor = ft.Colors.WHITE
-        _log("[LZ-DIAG] 2: bgcolor gesetzt")
-        page.add(ft.Text("Flet läuft! (kein update)", color=ft.Colors.RED, size=40))
-        _log("[LZ-DIAG] 3: page.add() OK – KEIN page.update()")
+        page.title = "Lernzeit Manager"
+        page.bgcolor = ft.Colors.BACKGROUND
+        page.theme_mode = ft.ThemeMode.LIGHT
+
+        # Initiale Pfad-Konfiguration für Android
+        # Auf dem Desktop bleibt es im aktuellen Verzeichnis
+        assets_dir = Path(__file__).parent / "assets"
+
+        # Store initialisieren
+        store = Store()
+
+        # UI aufbauen
+        build_app(page, store)
+
     except Exception as e:
         _log(f"[LZ-DIAG] FEHLER: {type(e).__name__}: {e}")
         _log(traceback.format_exc())
