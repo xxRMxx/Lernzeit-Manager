@@ -1,3 +1,7 @@
 *.zip
 *.apk
 build/
+
+__pycache__/
+*.py[cod]
+*$py.class

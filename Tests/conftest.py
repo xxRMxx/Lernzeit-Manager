@@ -3,6 +3,7 @@ Pytest-Fixtures für den E2E-Test der Lernzeit-Manager Flet-App.
 """
 import os
 import shutil
+import sys
 import subprocess
 import time
 import socket
@@ -63,7 +64,7 @@ def app_process(clean_state):
         return
 
     proc = subprocess.Popen(
-        [str(ROOT_DIR / ".venv/bin/python3"), "main.py"],
+        [sys.executable, "main.py"],
         cwd=ROOT_DIR,
         env={**os.environ, "FLET_PORT": str(APP_PORT)},
         stdout=subprocess.DEVNULL,
