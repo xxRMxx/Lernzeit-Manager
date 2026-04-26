@@ -5,7 +5,7 @@ import flet as ft
 from src.store.store import Store
 from src.types.app_state import AppState
 from src.logic.planning import completion_ratio, total_studied_hours
-from src.logic.statistics import total_hours_all_goals, streak_days, milestones_by_status, sessions_by_week, hours_per_goal
+from src.logic.statistics import total_hours_all_goals, streak_days, milestones_by_status, sessions_by_week
 from src.logic.reminder import get_reminders
 from src.logic.stopwatch import format_seconds
 from src.views.components.stat_card import stat_card
@@ -36,14 +36,24 @@ def _goals_progress_section(state: AppState) -> ft.Control:
     if not active_goals:
         return ft.Container()
 
-    bars = [
-        labeled_progress_bar(
-            g.title,
-            completion_ratio(g, state.sessions),
-            f"{total_studied_hours(g.id, state.sessions):.1f}h / {g.target_hours:.0f}h",
+    # Vorberechnung der Stunden pro Ziel für O(N) statt O(N*G)
+    hours_map: dict[str, float] = {}
+    for s in state.sessions:
+        gid_str = str(s.goal_id)
+        hours_map[gid_str] = hours_map.get(gid_str, 0.0) + s.duration_seconds / 3600
+
+    bars = []
+    for g in active_goals:
+        studied = hours_map.get(str(g.id), 0.0)
+        ratio = min(studied / g.target_hours, 1.0) if g.target_hours > 0 else 0.0
+        bars.append(
+            labeled_progress_bar(
+                g.title,
+                ratio,
+                f"{studied:.1f}h / {g.target_hours:.0f}h",
+            )
         )
-        for g in active_goals
-    ]
+    
     return ft.Card(
         content=ft.Container(
             ft.Column([

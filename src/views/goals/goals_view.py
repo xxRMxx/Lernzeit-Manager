@@ -11,6 +11,9 @@ from src.logic.planning import completion_ratio, total_studied_hours, days_remai
 from src.views.components.progress_bar import labeled_progress_bar
 
 
+from src.utils.date_parser import parse_german_date
+
+
 def _goal_card(goal: LearningGoal, state: AppState, store: Store, page: ft.Page) -> ft.Control:
     ratio = completion_ratio(goal, state.sessions)
     studied = total_studied_hours(goal.id, state.sessions)
@@ -123,12 +126,13 @@ def _goal_form_dialog(store: Store, page: ft.Page) -> ft.AlertDialog:
                 error_text.value = "Bitte gültige Stundenzahl eingeben."
                 error_text.update()
                 return
-            start = date.fromisoformat(
-                "-".join(reversed(start_field.value.strip().split(".")))
-            )
-            end = date.fromisoformat(
-                "-".join(reversed(end_field.value.strip().split(".")))
-            )
+            
+            start = parse_german_date(start_field.value)
+            end = parse_german_date(end_field.value)
+            
+            if not start or not end:
+                raise ValueError("Ungültiges Datum")
+            
             if end <= start:
                 error_text.value = "Enddatum muss nach Startdatum liegen."
                 error_text.update()

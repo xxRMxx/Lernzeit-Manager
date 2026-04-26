@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from uuid import UUID
 import flet as ft
 
 from src.store.store import Store
@@ -7,22 +7,61 @@ from src.store.actions import StartStopwatch, PauseStopwatch, ResumeStopwatch, S
 from src.types.app_state import AppState
 from src.logic.stopwatch import elapsed_seconds, format_seconds
 
-# Geteilte Referenz auf das aktive Timer-Text-Control (wird von app_view.py aktualisiert)
+# Shared reference for the active timer text control
 _timer_ref: dict = {"text": None}
 
-
 def build_stopwatch_view(state: AppState, store: Store, page: ft.Page) -> ft.Control:
-    """Stoppuhr-Ansicht mit Echtzeit-Anzeige."""
+    """Stopwatch view with real-time display."""
     sw = state.stopwatch
 
-    # Ziel-Auswahl
+    goal_dropdown = _build_goal_selector(state)
+    timer_text, phase_label = _build_timer_display(state)
+    _timer_ref["text"] = timer_text
+
+    note_field = ft.TextField(
+        label="Notiz zur Session (optional)",
+        multiline=True,
+        max_lines=2,
+        width=350,
+        visible=False,
+    )
+
+    controls = _build_controls(state, store, goal_dropdown, note_field)
+    history = _build_history_section(state, store)
+
+    return ft.Column(
+        [
+            ft.Container(
+                ft.Column(
+                    [
+                        goal_dropdown,
+                        ft.Container(height=8),
+                        timer_text,
+                        phase_label,
+                        controls,
+                        note_field,
+                    ],
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=8,
+                ),
+                padding=24,
+                alignment=ft.Alignment(0, 0),
+            ),
+            history,
+        ],
+        expand=True,
+        scroll=ft.ScrollMode.AUTO,
+    )
+
+def _build_goal_selector(state: AppState) -> ft.Dropdown:
+    sw = state.stopwatch
     active_goals = [g for g in state.goals if g.status == "active"]
     goal_options = [
         ft.dropdown.Option(key=str(g.id), text=g.title) for g in active_goals
     ]
     selected_goal_id = str(sw.goal_id) if sw.goal_id else (str(active_goals[0].id) if active_goals else None)
 
-    goal_dropdown = ft.Dropdown(
+    return ft.Dropdown(
         label="Lernziel",
         options=goal_options,
         value=selected_goal_id,
@@ -30,7 +69,8 @@ def build_stopwatch_view(state: AppState, store: Store, page: ft.Page) -> ft.Con
         width=350,
     )
 
-    # Timer-Anzeige
+def _build_timer_display(state: AppState) -> tuple[ft.Text, ft.Text]:
+    sw = state.stopwatch
     initial_secs = elapsed_seconds(sw, datetime.now())
     timer_text = ft.Text(
         format_seconds(initial_secs),
@@ -46,51 +86,14 @@ def build_stopwatch_view(state: AppState, store: Store, page: ft.Page) -> ft.Con
         color=ft.Colors.ON_SURFACE_VARIANT,
         italic=True,
     )
+    return timer_text, phase_label
 
-    note_field = ft.TextField(
-        label="Notiz zur Session (optional)",
-        multiline=True,
-        max_lines=2,
-        width=350,
-        visible=False,
-    )
-
-    # Letzten 5 Sessions anzeigen
-    recent_sessions = sorted(state.sessions, key=lambda s: s.ended_at, reverse=True)[:5]
-
-    def _session_row(s) -> ft.Control:
-        goal = next((g for g in state.goals if g.id == s.goal_id), None)
-        goal_title = goal.title if goal else "Unbekannt"
-
-        def on_delete(e, sid=s.id):
-            store.dispatch(RemoveSession(session_id=sid))
-
-        return ft.ListTile(
-            leading=ft.Icon(ft.Icons.HISTORY),
-            title=ft.Text(goal_title, size=13),
-            subtitle=ft.Text(s.started_at.strftime("%d.%m. %H:%M"), size=11),
-            trailing=ft.Row(
-                [
-                    ft.Text(format_seconds(s.duration_seconds), weight=ft.FontWeight.BOLD),
-                    ft.IconButton(
-                        icon=ft.Icons.DELETE_OUTLINE,
-                        icon_color=ft.Colors.ERROR,
-                        icon_size=18,
-                        tooltip="Session löschen",
-                        on_click=on_delete,
-                    ),
-                ],
-                tight=True,
-                spacing=0,
-            ),
-        )
-
-    _timer_ref["text"] = timer_text
+def _build_controls(state: AppState, store: Store, goal_dropdown: ft.Dropdown, note_field: ft.TextField) -> ft.Row:
+    sw = state.stopwatch
 
     def on_start(e):
         if not goal_dropdown.value:
             return
-        from uuid import UUID
         store.dispatch(StartStopwatch(goal_id=UUID(goal_dropdown.value), now=datetime.now()))
 
     def on_pause(e):
@@ -115,7 +118,6 @@ def build_stopwatch_view(state: AppState, store: Store, page: ft.Page) -> ft.Con
         note_field.visible = False
         note_field.value = ""
 
-    # Buttons je nach Phase
     start_btn = ft.ElevatedButton(
         "Start", icon=ft.Icons.PLAY_ARROW,
         on_click=on_start,
@@ -146,42 +148,52 @@ def build_stopwatch_view(state: AppState, store: Store, page: ft.Page) -> ft.Con
         style=ft.ButtonStyle(bgcolor=ft.Colors.BLUE, color=ft.Colors.WHITE),
     )
 
-    history_section = ft.Column(
-        [
+    return ft.Row(
+        [start_btn, pause_btn, resume_btn, stop_btn, confirm_btn],
+        alignment=ft.MainAxisAlignment.CENTER,
+        spacing=8,
+    )
+
+def _build_history_section(state: AppState, store: Store) -> ft.Column:
+    recent_sessions = sorted(state.sessions, key=lambda s: s.ended_at, reverse=True)[:5]
+
+    def _session_row(s) -> ft.Control:
+        goal = next((g for g in state.goals if g.id == s.goal_id), None)
+        goal_title = goal.title if goal else "Unbekannt"
+
+        def on_delete(e, sid=s.id):
+            store.dispatch(RemoveSession(session_id=sid))
+
+        return ft.ListTile(
+            leading=ft.Icon(ft.Icons.HISTORY),
+            title=ft.Text(goal_title, size=13),
+            subtitle=ft.Text(s.started_at.strftime("%d.%m. %H:%M"), size=11),
+            trailing=ft.Row(
+                [
+                    ft.Text(format_seconds(s.duration_seconds), weight=ft.FontWeight.BOLD),
+                    ft.IconButton(
+                        icon=ft.Icons.DELETE_OUTLINE,
+                        icon_color=ft.Colors.ERROR,
+                        icon_size=18,
+                        tooltip="Session löschen",
+                        on_click=on_delete,
+                    ),
+                ],
+                tight=True,
+                spacing=0,
+            ),
+        )
+
+    if not recent_sessions:
+        return ft.Column([
             ft.Divider(),
-            ft.Text("Letzte Sessions", size=14, weight=ft.FontWeight.BOLD),
-            *([_session_row(s) for s in recent_sessions]
-              if recent_sessions else [ft.Text("Noch keine Sessions", color=ft.Colors.ON_SURFACE_VARIANT)]),
-        ]
-    ) if recent_sessions else ft.Column([
-        ft.Divider(),
-        ft.Text("Noch keine Sessions", color=ft.Colors.ON_SURFACE_VARIANT, size=13),
-    ])
+            ft.Text("Noch keine Sessions", color=ft.Colors.ON_SURFACE_VARIANT, size=13),
+        ])
 
     return ft.Column(
         [
-            ft.Container(
-                ft.Column(
-                    [
-                        goal_dropdown,
-                        ft.Container(height=8),
-                        timer_text,
-                        phase_label,
-                        ft.Row(
-                            [start_btn, pause_btn, resume_btn, stop_btn, confirm_btn],
-                            alignment=ft.MainAxisAlignment.CENTER,
-                            spacing=8,
-                        ),
-                        note_field,
-                    ],
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                    spacing=8,
-                ),
-                padding=24,
-                alignment=ft.Alignment(0, 0),
-            ),
-            history_section,
-        ],
-        expand=True,
-        scroll=ft.ScrollMode.AUTO,
+            ft.Divider(),
+            ft.Text("Letzte Sessions", size=14, weight=ft.FontWeight.BOLD),
+            *[_session_row(s) for s in recent_sessions],
+        ]
     )
