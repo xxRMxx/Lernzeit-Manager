@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from src.types.app_state import AppState
 from src.types.goal import LearningGoal
-from src.types.session import StudySession, StopwatchState
+from src.types.session import StudySession
 from src.types.milestone import Milestone
 from src.persistence.serializer import state_to_dict, state_from_dict
 

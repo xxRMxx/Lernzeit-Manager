@@ -92,3 +92,33 @@ def test_days_remaining():
 def test_days_remaining_past():
     goal = make_goal(end=date(2025, 1, 1))
     assert days_remaining(goal, date(2025, 6, 1)) == 0
+
+
+def test_hours_per_day_needed():
+    goal = make_goal(target_hours=100.0, end=date(2025, 1, 31))
+    sessions = (make_session(goal.id, 3600 * 40),) # 40h gelernt, 60h offen
+    # 60h / 30 Tage = 2h/Tag
+    assert hours_per_day_needed(goal, sessions, date(2025, 1, 1)) == 2.0
+
+def test_hours_per_day_needed_zero_days():
+    goal = make_goal(target_hours=100.0, end=date(2025, 1, 1))
+    assert hours_per_day_needed(goal, (), date(2025, 1, 1)) == 0.0
+
+def test_planned_vs_actual():
+    gid = uuid4()
+    plans = (
+        RoughPlanEntry(goal_id=gid, year=2025, month=1, planned_hours=10),
+        RoughPlanEntry(goal_id=gid, year=2025, month=2, planned_hours=20),
+    )
+    sessions = (
+        make_session(gid, 3600 * 5, datetime(2025, 1, 10)),
+        make_session(gid, 3600 * 15, datetime(2025, 2, 5)),
+    )
+    result = planned_vs_actual(gid, plans, sessions, 2025)
+    # Month 1: 5h actual vs 10h planned
+    assert result[0] == {"month": 1, "planned_hours": 10.0, "actual_hours": 5.0}
+    # Month 2: 15h actual vs 20h planned
+    assert result[1] == {"month": 2, "planned_hours": 20.0, "actual_hours": 15.0}
+    # Other months should have 0/0
+    assert result[2]["planned_hours"] == 0.0
+    assert result[2]["actual_hours"] == 0.0
