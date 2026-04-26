@@ -13,6 +13,17 @@ from src.logic.statistics import (
     hours_per_goal,
 )
 
+def make_goal(status="active"):
+    return LearningGoal(
+        id=uuid4(),
+        title="Test Goal",
+        description="",
+        target_hours=10.0,
+        start_date=date(2025, 1, 1),
+        end_date=date(2025, 12, 31),
+        status=status,
+    )
+
 def test_total_hours_all_goals():
     now = datetime.now()
     s1 = StudySession(id=uuid4(), goal_id=uuid4(), started_at=now, ended_at=now, duration_seconds=3600)
@@ -70,14 +81,31 @@ def test_milestones_by_status():
     assert result["planned"] == 2
     assert result["missed"] == 0
 
-def test_goals_by_status():
-    g1 = LearningGoal(id=uuid4(), title="G1", description="", status="active", target_hours=10, start_date=date.today(), end_date=date.today())
-    g2 = LearningGoal(id=uuid4(), title="G2", description="", status="completed", target_hours=10, start_date=date.today(), end_date=date.today())
-    
-    result = goals_by_status((g1, g2))
+def test_goals_by_status_empty():
+    result = goals_by_status(())
+    assert result == {"active": 0, "completed": 0, "abandoned": 0}
+
+def test_goals_by_status_counts():
+    goals = (
+        make_goal(status="active"),
+        make_goal(status="active"),
+        make_goal(status="completed"),
+        make_goal(status="abandoned"),
+        make_goal(status="completed"),
+        make_goal(status="completed"),
+    )
+    result = goals_by_status(goals)
+    assert result == {"active": 2, "completed": 3, "abandoned": 1}
+
+def test_goals_by_status_unexpected():
+    goals = (
+        make_goal(status="active"),
+        make_goal(status="unknown_status"),
+    )
+    result = goals_by_status(goals)
+    # The actual implementation might include unexpected statuses in the result
     assert result["active"] == 1
-    assert result["completed"] == 1
-    assert result["abandoned"] == 0
+    assert result["unknown_status"] == 1
 
 def test_hours_per_goal():
     gid1 = uuid4()

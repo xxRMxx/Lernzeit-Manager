@@ -4,6 +4,7 @@ Pytest-Fixtures für den E2E-Test der Lernzeit-Manager Flet-App.
 import sys
 import os
 import shutil
+import sys
 import subprocess
 import time
 import socket

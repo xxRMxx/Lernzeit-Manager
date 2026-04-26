@@ -14,7 +14,6 @@ Selektoren-Strategie:
 import time
 from datetime import date, timedelta
 
-import pytest
 from playwright.sync_api import Page
 
 # ── Hilfsfunktionen ────────────────────────────────────────────────────────────
