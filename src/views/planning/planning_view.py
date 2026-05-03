@@ -1,7 +1,10 @@
 from datetime import date
 from uuid import UUID
+import logging
 
 import flet as ft
+
+logger = logging.getLogger(__name__)
 
 from src.store.store import Store
 from src.store.actions import SetRoughPlanEntry, AddTimeSlot, RemoveTimeSlot
@@ -54,13 +57,17 @@ def _build_rough_plan(state: AppState, store: Store, page: ft.Page) -> ft.Contro
 
         def on_blur(e, gid=goal_id, y=year, m=month, field=tf):
             try:
+                field.error_text = None
+                field.update()
                 hours = float(field.value or "0")
                 if hours >= 0:
                     store.dispatch(SetRoughPlanEntry(
                         entry=RoughPlanEntry(goal_id=gid, year=y, month=m, planned_hours=hours)
                     ))
             except ValueError:
-                pass
+                logger.error("Ungültige Eingabe im Planungsfeld", exc_info=True)
+                field.error_text = "Ungültig"
+                field.update()
 
         tf.on_blur = on_blur
         return tf
@@ -228,6 +235,8 @@ def _build_month_plan(state: AppState, store: Store, page: ft.Page) -> ft.Contro
 
         def on_save(e):
             try:
+                minutes_field.error_text = None
+                minutes_field.update()
                 mins = int(minutes_field.value or "0")
                 if mins <= 0:
                     return
@@ -238,7 +247,9 @@ def _build_month_plan(state: AppState, store: Store, page: ft.Page) -> ft.Contro
                 page.pop_dialog()
                 refresh()
             except (ValueError, AttributeError):
-                pass
+                logger.error("Ungültige Eingabe beim Speichern des Zeitslots", exc_info=True)
+                minutes_field.error_text = "Ungültig"
+                minutes_field.update()
 
         form_dlg = ft.AlertDialog(
             title=ft.Text(f"Lerneinheit: {day.strftime('%d.%m.%Y')}"),
