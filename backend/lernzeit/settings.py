@@ -1,9 +1,17 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'dev-secret-key-change-in-production'
 DEBUG = True
+
+# Read SECRET_KEY from environment in production.
+# In development (DEBUG=True), provide a fallback.
+if DEBUG:
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+else:
+    # Fail fast in production if SECRET_KEY is missing
+    SECRET_KEY = os.environ['SECRET_KEY']
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
