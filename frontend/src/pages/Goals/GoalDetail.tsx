@@ -2,17 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useGoal, useGoalStats, useUpdateGoal, useDeleteGoal } from '../../api/goals'
 import GoalForm from './GoalForm'
-
-function ProgressBar({ percent }: { percent: number }) {
-  return (
-    <div className="w-full bg-gray-100 rounded-full h-3">
-      <div
-        className="bg-primary-500 h-3 rounded-full transition-all"
-        style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
-      />
-    </div>
-  )
-}
+import ProgressBar from '../../components/ProgressBar'
 
 export default function GoalDetail() {
   const { id } = useParams<{ id: string }>()
@@ -53,7 +43,7 @@ export default function GoalDetail() {
           </div>
           {stats && (
             <div className="mt-4 space-y-2">
-              <ProgressBar percent={stats.progress_percent} />
+              <ProgressBar percent={stats.progress_percent} size="md" />
               <div className="flex justify-between text-sm text-gray-500">
                 <span>{stats.own_hours.toFixed(1)} / {stats.target_hours} Stunden</span>
                 <span>{stats.progress_percent.toFixed(0)}%</span>
