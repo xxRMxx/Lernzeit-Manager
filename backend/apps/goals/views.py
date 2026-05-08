@@ -1,4 +1,5 @@
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Count, OuterRef, Subquery, IntegerField
+from django.db.models.functions import Coalesce
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
@@ -149,12 +150,28 @@ def goal_stats(request, goal_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def dashboard(request):
-    goals = get_accessible_goals(request.user)
+    own_seconds_sq = Session.objects.filter(
+        goal=OuterRef('pk'),
+        user=request.user
+    ).values('goal').annotate(
+        total=Sum('duration_seconds')
+    ).values('total')
+
+    open_milestones_sq = Milestone.objects.filter(
+        goal=OuterRef('pk'),
+        status='OPEN'
+    ).values('goal').annotate(
+        count=Count('pk')
+    ).values('count')
+
+    goals = get_accessible_goals(request.user).annotate(
+        own_seconds=Coalesce(Subquery(own_seconds_sq, output_field=IntegerField()), 0),
+        open_milestones_count=Coalesce(Subquery(open_milestones_sq, output_field=IntegerField()), 0)
+    )
+
     result = []
     for goal in goals:
-        own_seconds = Session.objects.filter(goal=goal, user=request.user).aggregate(
-            total=Sum('duration_seconds')
-        )['total'] or 0
+        own_seconds = goal.own_seconds
         result.append({
             'id': str(goal.id),
             'title': goal.title,
@@ -162,6 +179,6 @@ def dashboard(request):
             'own_hours': round(own_seconds / 3600, 2),
             'target_hours': goal.target_hours,
             'progress_percent': round((own_seconds / 3600) / goal.target_hours * 100, 1) if goal.target_hours else 0,
-            'open_milestones': goal.milestones.filter(status='OPEN').count(),
+            'open_milestones': goal.open_milestones_count,
         })
     return Response(result)
