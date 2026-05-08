@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 
 from src.types.app_state import AppState
-from src.types.plan import TimeSlot
 from src.logic.planning import overdue_slots
 
 INACTIVITY_THRESHOLD = timedelta(hours=24)
