@@ -3,6 +3,7 @@ Store: einzige nicht-pure Klasse der Anwendung.
 Kapselt alle Seiteneffekte: Persistenz + Observer-Benachrichtigung.
 Optimiert: Persistenz erfolgt asynchron in einem Hintergrund-Thread.
 """
+import logging
 import threading
 import time
 from typing import Callable, Optional
@@ -12,6 +13,7 @@ from src.store.actions import Action
 from src.store.reducer import reduce
 from src.persistence.file_store import load_state, save_state
 
+logger = logging.getLogger(__name__)
 
 class Store:
     def __init__(self):
@@ -63,7 +65,7 @@ class Store:
                 try:
                     save_state(state_to_save)
                 except Exception as e:
-                    print(f"Fehler bei asynchroner Speicherung: {e}")
+                    logger.error(f"Fehler bei asynchroner Speicherung: {e}")
             
             # Kurze Pause um "Spamming" bei schnellen Änderungen zu vermeiden (Debouncing)
             time.sleep(0.1)
