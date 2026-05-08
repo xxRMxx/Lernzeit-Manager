@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import date
 from uuid import uuid4
 
 from src.types.app_state import AppState
