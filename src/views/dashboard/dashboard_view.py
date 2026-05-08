@@ -4,7 +4,6 @@ import flet as ft
 
 from src.store.store import Store
 from src.types.app_state import AppState
-from src.logic.planning import completion_ratio, total_studied_hours
 from src.logic.statistics import total_hours_all_goals, streak_days, milestones_by_status, sessions_by_week
 from src.logic.reminder import get_reminders
 from src.logic.stopwatch import format_seconds
