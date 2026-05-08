@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -104,7 +105,10 @@ REST_AUTH = {
     'TOKEN_MODEL': 'rest_framework.authtoken.models.Token',
 }
 
-CORS_ALLOW_ALL_ORIGINS = True  # nur für Entwicklung
+cors_origins_env = os.environ.get('CORS_ALLOWED_ORIGINS', '')
+CORS_ALLOWED_ORIGINS = [
+    origin.strip() for origin in cors_origins_env.split(',') if origin.strip()
+]
 CORS_ALLOW_CREDENTIALS = True
 
 LANGUAGE_CODE = 'de-de'
