@@ -118,12 +118,6 @@ def _build_month_plan(state: AppState, store: Store, page: ft.Page) -> ft.Contro
 
     active_goals = [g for g in state.goals if g.status == "active"]
 
-    def get_month_plan(goal_id: UUID, year: int, month: int):
-        return next(
-            (p for p in state.month_plans if p.goal_id == goal_id and p.year == year and p.month == month),
-            None,
-        )
-
     def on_prev(e):
         m = selected_month["month"] - 1
         y = selected_month["year"]
@@ -168,6 +162,17 @@ def _build_month_plan(state: AppState, store: Store, page: ft.Page) -> ft.Contro
             _do_update()
             return
 
+        # Precompute plans to avoid O(N*M) lookups inside the day loop
+        goal_plans = {p.goal_id: p for p in state.month_plans if p.year == y and p.month == m}
+
+        # Precompute slots by date
+        slots_by_date = {}
+        for goal in active_goals:
+            plan = goal_plans.get(goal.id)
+            if plan:
+                for slot in plan.slots:
+                    slots_by_date.setdefault(slot.date, []).append((goal, slot))
+
         rows = []
         for day in range(1, days_in_month + 1):
             d = date(y, m, day)
@@ -175,13 +180,7 @@ def _build_month_plan(state: AppState, store: Store, page: ft.Page) -> ft.Contro
             is_weekend = d.weekday() >= 5
 
             # Slots aller Ziele für diesen Tag sammeln
-            day_slots = []
-            for goal in active_goals:
-                plan = get_month_plan(goal.id, y, m)
-                if plan:
-                    for slot in plan.slots:
-                        if slot.date == d:
-                            day_slots.append((goal, slot))
+            day_slots = slots_by_date.get(d, [])
 
             def make_add_btn(day_date=d):
                 def on_add(e):
