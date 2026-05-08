@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from uuid import UUID
 
 from .goal import LearningGoal
 from .plan import RoughPlanEntry, MonthPlan

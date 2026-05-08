@@ -4,7 +4,7 @@ from uuid import UUID
 
 from src.types.goal import LearningGoal, GoalStatus
 from src.types.plan import RoughPlanEntry, MonthPlan, TimeSlot
-from src.types.milestone import Milestone, MilestoneStatus
+from src.types.milestone import Milestone
 
 
 # --- Ziele ---

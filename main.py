@@ -1,7 +1,6 @@
 import os
 import flet as ft
 
-from src.persistence.file_store import set_base_dir
 from src.store.store import Store
 from src.views.app_view import build_app
 
