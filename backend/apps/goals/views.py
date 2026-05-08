@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import Goal, GoalMembership, Plan, Session, Milestone
-from .permissions import CanAccessGoal, IsGoalOwner, get_user_role
+from .permissions import CanAccessGoal, get_user_role
 from .serializers import (
     GoalSerializer, GoalListSerializer, MembershipSerializer,
     PlanSerializer, SessionSerializer, MilestoneSerializer,
