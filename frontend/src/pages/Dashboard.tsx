@@ -1,17 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useDashboard } from '../api/dashboard'
 import { useAuthStore } from '../store/auth'
-
-function ProgressBar({ percent }: { percent: number }) {
-  return (
-    <div className="w-full bg-gray-100 rounded-full h-2">
-      <div
-        className="bg-primary-500 h-2 rounded-full transition-all"
-        style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
-      />
-    </div>
-  )
-}
+import ProgressBar from '../components/ProgressBar'
 
 export default function Dashboard() {
   const user = useAuthStore((s) => s.user)
