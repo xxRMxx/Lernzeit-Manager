@@ -29,6 +29,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         actualTheme = mediaQuery.matches ? 'dark' : 'light'
       }
 
+      console.log('Applying theme:', { theme, actualTheme })
+
       if (actualTheme === 'dark') {
         root.classList.add('dark')
         root.style.colorScheme = 'dark'
