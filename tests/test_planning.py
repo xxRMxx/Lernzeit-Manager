@@ -39,7 +39,8 @@ def test_total_planned_hours():
         RoughPlanEntry(goal_id=gid, year=2025, month=2, planned_hours=15),
         RoughPlanEntry(goal_id=uuid4(), year=2025, month=1, planned_hours=5),
     )
-    assert total_planned_hours(gid, plans) == 25.0
+    planned = total_planned_hours(plans)
+    assert planned.get(gid, 0.0) == 25.0
 
 
 def test_total_studied_hours():
