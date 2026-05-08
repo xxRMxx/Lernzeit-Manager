@@ -1,10 +1,21 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'dev-secret-key-change-in-production'
-DEBUG = True
-ALLOWED_HOSTS = ['*']
+# Safe defaulting to prevent KeyError during local development unless configured otherwise
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+
+if DEBUG:
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+else:
+    # Fail fast if in production and SECRET_KEY is not set
+    SECRET_KEY = os.environ['SECRET_KEY']
+
+if DEBUG and not os.environ.get('ALLOWED_HOSTS'):
+    ALLOWED_HOSTS = ['*']
+else:
+    ALLOWED_HOSTS = [host.strip() for host in os.environ.get('ALLOWED_HOSTS', '').split(',') if host.strip()]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -104,7 +115,16 @@ REST_AUTH = {
     'TOKEN_MODEL': 'rest_framework.authtoken.models.Token',
 }
 
-CORS_ALLOW_ALL_ORIGINS = True  # nur für Entwicklung
+cors_origins = [
+    origin.strip()
+    for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
+    if origin.strip()
+]
+if cors_origins:
+    CORS_ALLOWED_ORIGINS = cors_origins
+else:
+    CORS_ALLOW_ALL_ORIGINS = DEBUG
+
 CORS_ALLOW_CREDENTIALS = True
 
 LANGUAGE_CODE = 'de-de'
