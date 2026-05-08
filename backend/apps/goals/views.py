@@ -1,4 +1,4 @@
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Count
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
@@ -134,15 +134,20 @@ class PlanListCreateView(generics.ListCreateAPIView):
 def goal_stats(request, goal_id):
     goal = generics.get_object_or_404(Goal, pk=goal_id)
     sessions = Session.objects.filter(goal=goal)
-    own_seconds = sessions.filter(user=request.user).aggregate(total=Sum('duration_seconds'))['total'] or 0
-    total_seconds = sessions.aggregate(total=Sum('duration_seconds'))['total'] or 0
+    stats = sessions.aggregate(
+        own_total=Sum('duration_seconds', filter=Q(user=request.user)),
+        total=Sum('duration_seconds'),
+        own_count=Count('id', filter=Q(user=request.user))
+    )
+    own_seconds = stats['own_total'] or 0
+    total_seconds = stats['total'] or 0
     return Response({
         'goal_id': str(goal.id),
         'own_hours': round(own_seconds / 3600, 2),
         'total_hours': round(total_seconds / 3600, 2),
         'target_hours': goal.target_hours,
         'progress_percent': round((own_seconds / 3600) / goal.target_hours * 100, 1) if goal.target_hours else 0,
-        'session_count': sessions.filter(user=request.user).count(),
+        'session_count': stats['own_count'] or 0,
     })
 
 
