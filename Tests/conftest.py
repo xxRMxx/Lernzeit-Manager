@@ -64,6 +64,7 @@ def app_process(clean_state):
         yield None
         return
 
+    import sys
     proc = subprocess.Popen(
         [sys.executable, "main.py"],
         cwd=ROOT_DIR,
