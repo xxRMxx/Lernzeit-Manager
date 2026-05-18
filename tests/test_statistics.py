@@ -125,20 +125,27 @@ def test_sessions_by_week_empty():
 
 # --- Milestone Statistics Tests ---
 
-def test_milestones_by_status():
-    gid = uuid4()
-    milestones = (
-        make_milestone(gid, "planned"),
-        make_milestone(gid, "achieved"),
-        make_milestone(gid, "achieved"),
-        make_milestone(gid, "missed"),
-    )
-    result = milestones_by_status(milestones)
-    assert result == {"planned": 1, "achieved": 2, "missed": 1}
-
 def test_milestones_by_status_empty():
     result = milestones_by_status(())
     assert result == {"planned": 0, "achieved": 0, "missed": 0}
+
+def test_milestones_by_status_single():
+    milestones = (
+        make_milestone(status="planned"),
+        make_milestone(status="planned"),
+    )
+    result = milestones_by_status(milestones)
+    assert result == {"planned": 2, "achieved": 0, "missed": 0}
+
+def test_milestones_by_status_mixed():
+    milestones = (
+        make_milestone(status="planned"),
+        make_milestone(status="achieved"),
+        make_milestone(status="achieved"),
+        make_milestone(status="missed"),
+    )
+    result = milestones_by_status(milestones)
+    assert result == {"planned": 1, "achieved": 2, "missed": 1}
 
 # --- Goal Statistics Tests ---
 
