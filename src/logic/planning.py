@@ -7,10 +7,16 @@ from src.types.session import StudySession
 
 
 def total_planned_hours(
-    goal_id: UUID, rough_plans: tuple[RoughPlanEntry, ...]
-) -> float:
-    """Pure: summiert geplante Stunden aus der Grobplanung für ein Ziel."""
-    return sum(p.planned_hours for p in rough_plans if p.goal_id == goal_id)
+    rough_plans: tuple[RoughPlanEntry, ...]
+) -> dict[UUID, float]:
+    """
+    Pure: berechnet geplante Stunden aus der Grobplanung für alle Ziele.
+    Gibt {goal_id: total_hours} zurück.
+    """
+    result: dict[UUID, float] = {}
+    for p in rough_plans:
+        result[p.goal_id] = result.get(p.goal_id, 0.0) + p.planned_hours
+    return result
 
 
 def total_studied_hours(
