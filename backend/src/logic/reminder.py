@@ -28,11 +28,11 @@ def get_reminders(state: AppState, now: datetime) -> list[str]:
     """
     reminders = []
 
-    if is_inactive(state, now) and state.goals:
+    if state.goals:
         la = last_activity(state)
         if la is None:
             reminders.append("Du hast noch keine Lernzeit erfasst. Starte jetzt!")
-        else:
+        elif (now - la) > INACTIVITY_THRESHOLD:
             hours_ago = int((now - la).total_seconds() / 3600)
             reminders.append(
                 f"Du hast seit {hours_ago} Stunden nicht gelernt. "

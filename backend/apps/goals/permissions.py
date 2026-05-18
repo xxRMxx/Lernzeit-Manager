@@ -5,10 +5,8 @@ from .models import Goal, GoalMembership
 def get_user_role(goal, user):
     if goal.owner == user:
         return 'OWNER'
-    try:
-        return goal.memberships.get(user=user).role
-    except GoalMembership.DoesNotExist:
-        return None
+    membership = goal.memberships.filter(user=user).first()
+    return membership.role if membership else None
 
 
 class CanAccessGoal(BasePermission):
