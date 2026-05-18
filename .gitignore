@@ -37,3 +37,4 @@ data/state.json
 db.sqlite3
 frontend/dist/
 frontend/node_modules/
+frontend/.vite/
