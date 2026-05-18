@@ -16,6 +16,7 @@ from src.logic.statistics import (
 )
 
 def make_goal(
+    id=None,
     title="Test Goal",
     target_hours=100.0,
     start=None,
@@ -23,7 +24,7 @@ def make_goal(
     status="active",
 ):
     return LearningGoal(
-        id=uuid4(),
+        id=id or uuid4(),
         title=title,
         description="",
         target_hours=target_hours,
@@ -166,39 +167,70 @@ def test_goals_by_status_unexpected():
 
 # --- Hours Per Goal Tests ---
 
-def test_hours_per_goal():
-    gid1 = uuid4()
-    gid2 = uuid4()
-    gid3 = uuid4()
-
-    goals = (
-        LearningGoal(id=gid1, title="Math", description="", target_hours=100.0, start_date=date(2025,1,1), end_date=date(2025,6,30), status="active"),
-        LearningGoal(id=gid2, title="Science", description="", target_hours=100.0, start_date=date(2025,1,1), end_date=date(2025,6,30), status="active")
-    )
+def test_hours_per_goal_basic():
+    goal1 = make_goal(title="Goal 1")
+    goal2 = make_goal(title="Goal 2")
 
     sessions = (
-        make_session(gid1, 3600),   # Math 1h
-        make_session(gid2, 7200),   # Science 2h
-        make_session(gid1, 1800),   # Math 0.5h
-        make_session(gid3, 3600),   # Unknown goal 1h
+        make_session(goal1.id, 3600), # 1h
+        make_session(goal1.id, 7200), # 2h
+        make_session(goal2.id, 1800), # 0.5h
     )
 
-    result = hours_per_goal(goals, sessions)
+    result = hours_per_goal((goal1, goal2), sessions)
 
-    # Expected order: Science (2h), Math (1.5h), Unbekannt (1h)
-    assert len(result) == 3
+    # Should be sorted descending by hours: Goal 1 (3h) > Goal 2 (0.5h)
+    assert len(result) == 2
 
-    assert result[0]["goal_id"] == str(gid2)
-    assert result[0]["title"] == "Science"
+    assert result[0]["goal_id"] == str(goal1.id)
+    assert result[0]["title"] == "Goal 1"
+    assert result[0]["hours"] == 3.0
+
+    assert result[1]["goal_id"] == str(goal2.id)
+    assert result[1]["title"] == "Goal 2"
+    assert result[1]["hours"] == 0.5
+
+def test_hours_per_goal_unknown_goal():
+    goal1 = make_goal(title="Goal 1")
+    unknown_goal_id = uuid4()
+
+    sessions = (
+        make_session(goal1.id, 3600), # 1h
+        make_session(unknown_goal_id, 7200), # 2h
+    )
+
+    result = hours_per_goal((goal1,), sessions)
+
+    assert len(result) == 2
+
+    # The unknown goal has 2 hours, so it should be first
+    assert result[0]["goal_id"] == str(unknown_goal_id)
+    assert result[0]["title"] == "Unbekannt"
     assert result[0]["hours"] == 2.0
 
-    assert result[1]["goal_id"] == str(gid1)
-    assert result[1]["title"] == "Math"
-    assert result[1]["hours"] == 1.5
-
-    assert result[2]["goal_id"] == str(gid3)
-    assert result[2]["title"] == "Unbekannt"
-    assert result[2]["hours"] == 1.0
+    assert result[1]["goal_id"] == str(goal1.id)
+    assert result[1]["title"] == "Goal 1"
+    assert result[1]["hours"] == 1.0
 
 def test_hours_per_goal_empty():
-    assert hours_per_goal((), ()) == []
+    goal1 = make_goal(title="Goal 1")
+    result = hours_per_goal((goal1,), ())
+    assert result == []
+
+def test_hours_per_goal_sorting():
+    goal1 = make_goal(title="Goal 1")
+    goal2 = make_goal(title="Goal 2")
+    goal3 = make_goal(title="Goal 3")
+
+    sessions = (
+        make_session(goal1.id, 3600), # 1h
+        make_session(goal3.id, 10800), # 3h
+        make_session(goal2.id, 7200), # 2h
+    )
+
+    result = hours_per_goal((goal1, goal2, goal3), sessions)
+
+    assert len(result) == 3
+    assert result[0]["title"] == "Goal 3"
+    assert result[1]["title"] == "Goal 2"
+    assert result[2]["title"] == "Goal 1"
