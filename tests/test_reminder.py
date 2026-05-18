@@ -46,7 +46,13 @@ def make_time_slot(dt, minutes=60):
 def test_last_activity_empty():
     assert last_activity(AppState()) is None
 
-def test_last_activity_with_sessions():
+def test_last_activity_single_session():
+    dt = datetime(2025, 3, 1, 12, 0)
+    session = make_session(dt=dt)
+    state = AppState(sessions=(session,))
+    assert last_activity(state) == dt
+
+def test_last_activity_multiple_sessions():
     dt1 = datetime(2025, 3, 1, 10, 0)
     dt2 = datetime(2025, 3, 1, 15, 0)
     dt3 = datetime(2025, 3, 1, 12, 0)
