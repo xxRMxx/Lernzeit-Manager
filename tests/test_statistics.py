@@ -107,21 +107,35 @@ def test_streak_days_multiple_sessions_same_day():
 
 # --- Week Statistics Tests ---
 
-def test_sessions_by_week():
-    gid = uuid4()
+def test_sessions_by_week_empty():
+    assert sessions_by_week(tuple(), 2025) == {}
+
+def test_sessions_by_week_multiple_weeks():
     sessions = (
-        make_session(gid, 3600, datetime(2025, 1, 15, 10, 0)), # Week 3
-        make_session(gid, 1800, datetime(2025, 1, 16, 10, 0)), # Week 3
-        make_session(gid, 7200, datetime(2025, 3, 5, 10, 0)),  # Week 10
-        make_session(gid, 3600, datetime(2024, 1, 15, 10, 0)), # Wrong year
+        make_session(seconds=3600, dt=datetime(2025, 1, 1, 10, 0)), # Week 1
+        make_session(seconds=7200, dt=datetime(2025, 1, 8, 10, 0)), # Week 2
+        make_session(seconds=1800, dt=datetime(2025, 1, 15, 10, 0)), # Week 3
     )
     result = sessions_by_week(sessions, 2025)
-    assert result.get(3) == 1.5
-    assert result.get(10) == 2.0
-    assert len(result) == 2
+    assert result == {1: 1.0, 2: 2.0, 3: 0.5}
 
-def test_sessions_by_week_empty():
-    assert sessions_by_week((), 2025) == {}
+def test_sessions_by_week_different_years():
+    sessions = (
+        make_session(seconds=3600, dt=datetime(2024, 1, 1, 10, 0)), # Week 1 of 2024
+        make_session(seconds=7200, dt=datetime(2025, 1, 8, 10, 0)), # Week 2 of 2025
+    )
+    # Only 2025 sessions should be considered
+    result = sessions_by_week(sessions, 2025)
+    assert result == {2: 2.0}
+
+def test_sessions_by_week_multiple_sessions_same_week():
+    sessions = (
+        make_session(seconds=3600, dt=datetime(2025, 1, 1, 10, 0)), # Week 1
+        make_session(seconds=1800, dt=datetime(2025, 1, 2, 10, 0)), # Week 1
+        make_session(seconds=7200, dt=datetime(2025, 1, 8, 10, 0)), # Week 2
+    )
+    result = sessions_by_week(sessions, 2025)
+    assert result == {1: 1.5, 2: 2.0}
 
 # --- Milestone Statistics Tests ---
 
