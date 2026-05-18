@@ -1,0 +1,277 @@
+[LZ] __main__ block, starte ft.run()
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+[LZ-DIAG] FEHLER: AttributeError: 'super' object has no attribute '__getattr__'
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    page.bgcolor = ft.Colors.BACKGROUND
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/flet/utils/deprecated_enum.py", line 49, in __getattr__
+    return super().__getattr__(name)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'super' object has no attribute '__getattr__'. Did you mean: '__setattr__'?
+
+[LOG_ERR] [Errno 13] Permission denied: '/sdcard'
