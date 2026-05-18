@@ -3,8 +3,8 @@ from uuid import uuid4
 
 import pytest
 
-from src.types.session import StudySession
 from src.types.goal import LearningGoal
+from src.types.session import StudySession
 from src.types.milestone import Milestone
 from src.logic.statistics import (
     total_hours_all_goals,
@@ -15,127 +15,145 @@ from src.logic.statistics import (
     hours_per_goal,
 )
 
-def make_goal(status="active"):
+def make_goal(
+    title="Test Goal",
+    target_hours=100.0,
+    start=None,
+    end=None,
+    status="active",
+):
     return LearningGoal(
         id=uuid4(),
-        title="Test Goal",
+        title=title,
         description="",
-        target_hours=10.0,
-        start_date=date(2025, 1, 1),
-        end_date=date(2025, 12, 31),
+        target_hours=target_hours,
+        start_date=start or date(2025, 1, 1),
+        end_date=end or date(2025, 12, 31),
         status=status,
     )
 
-def make_session(dt: datetime, duration: int = 3600) -> StudySession:
+def make_session(goal_id=None, seconds=3600, dt=None):
+    dt = dt or datetime(2025, 3, 1, 10, 0)
     return StudySession(
         id=uuid4(),
-        goal_id=uuid4(),
+        goal_id=goal_id or uuid4(),
         started_at=dt,
-        ended_at=dt + timedelta(seconds=duration),
-        duration_seconds=duration,
+        ended_at=dt + timedelta(seconds=seconds),
+        duration_seconds=seconds,
     )
 
+def make_milestone(goal_id=None, status="planned"):
+    return Milestone(
+        id=uuid4(),
+        goal_id=goal_id or uuid4(),
+        title="Test Milestone",
+        milestone_type="custom",
+        target_date=date(2025, 12, 31),
+        status=status,
+    )
+
+# --- Total Hours Tests ---
+
 def test_total_hours_all_goals():
-    now = datetime.now()
-    s1 = StudySession(id=uuid4(), goal_id=uuid4(), started_at=now, ended_at=now, duration_seconds=3600)
-    s2 = StudySession(id=uuid4(), goal_id=uuid4(), started_at=now, ended_at=now, duration_seconds=1800)
-    assert total_hours_all_goals((s1, s2)) == 1.5
-    assert total_hours_all_goals(()) == 0
+    gid1 = uuid4()
+    gid2 = uuid4()
+    sessions = (
+        make_session(gid1, 3600),   # 1h
+        make_session(gid1, 1800),   # 0.5h
+        make_session(gid2, 7200),   # 2h
+    )
+    assert total_hours_all_goals(sessions) == 3.5
+
+def test_total_hours_all_goals_empty():
+    assert total_hours_all_goals(()) == 0.0
 
 # --- Streak Days Tests ---
 
-def test_streak_days_no_sessions():
-    today = date(2025, 4, 24)
-    assert streak_days((), today) == 0
-
-def test_streak_days_single_session_today():
-    today = date(2025, 4, 24)
+def test_streak_days():
+    gid = uuid4()
+    today = date(2025, 3, 10)
     sessions = (
-        make_session(datetime(2025, 4, 24, 10, 0)),
-    )
-    assert streak_days(sessions, today) == 1
-
-def test_streak_days_consecutive_sessions():
-    today = date(2025, 4, 24)
-    sessions = (
-        make_session(datetime(2025, 4, 24, 10, 0)),
-        make_session(datetime(2025, 4, 23, 10, 0)),
-        make_session(datetime(2025, 4, 22, 10, 0)),
+        make_session(gid, 3600, datetime(2025, 3, 10, 10, 0)),
+        make_session(gid, 3600, datetime(2025, 3, 9, 10, 0)),
+        make_session(gid, 3600, datetime(2025, 3, 8, 10, 0)),
+        # Missing March 7
+        make_session(gid, 3600, datetime(2025, 3, 6, 10, 0)),
     )
     assert streak_days(sessions, today) == 3
 
-def test_streak_days_broken_streak():
-    today = date(2025, 4, 24)
-    sessions = (
-        make_session(datetime(2025, 4, 24, 10, 0)),
-        make_session(datetime(2025, 4, 23, 10, 0)),
-        # Missed 22nd
-        make_session(datetime(2025, 4, 21, 10, 0)),
-        make_session(datetime(2025, 4, 20, 10, 0)),
-    )
-    assert streak_days(sessions, today) == 2
+def test_streak_days_no_sessions():
+    assert streak_days((), date(2025, 3, 10)) == 0
 
-def test_streak_days_missing_today():
-    today = date(2025, 4, 24)
+def test_streak_days_broken_today():
+    gid = uuid4()
+    today = date(2025, 3, 10)
     sessions = (
-        make_session(datetime(2025, 4, 23, 10, 0)),
-        make_session(datetime(2025, 4, 22, 10, 0)),
+        # Studied yesterday but not today
+        make_session(gid, 3600, datetime(2025, 3, 9, 10, 0)),
+        make_session(gid, 3600, datetime(2025, 3, 8, 10, 0)),
     )
-    # Since today has no session, current streak is 0
     assert streak_days(sessions, today) == 0
 
 def test_streak_days_multiple_sessions_same_day():
     today = date(2025, 4, 24)
     sessions = (
-        make_session(datetime(2025, 4, 24, 10, 0)),
-        make_session(datetime(2025, 4, 24, 14, 0)),
-        make_session(datetime(2025, 4, 23, 9, 0)),
-        make_session(datetime(2025, 4, 23, 18, 0)),
+        make_session(dt=datetime(2025, 4, 24, 10, 0)),
+        make_session(dt=datetime(2025, 4, 24, 14, 0)),
+        make_session(dt=datetime(2025, 4, 23, 9, 0)),
+        make_session(dt=datetime(2025, 4, 23, 18, 0)),
     )
     assert streak_days(sessions, today) == 2
 
-# --- Other Statistics Tests ---
+# --- Week Statistics Tests ---
 
 def test_sessions_by_week():
     gid = uuid4()
-    # 2025-01-01 is Wednesday, KW1
-    # 2025-01-08 is Wednesday, KW2
     sessions = (
-        StudySession(id=uuid4(), goal_id=gid, started_at=datetime(2025, 1, 1, 10, 0), ended_at=datetime(2025, 1, 1, 11, 0), duration_seconds=3600),
-        StudySession(id=uuid4(), goal_id=gid, started_at=datetime(2025, 1, 2, 10, 0), ended_at=datetime(2025, 1, 2, 12, 0), duration_seconds=7200),
-        StudySession(id=uuid4(), goal_id=gid, started_at=datetime(2025, 1, 8, 10, 0), ended_at=datetime(2025, 1, 8, 11, 0), duration_seconds=3600),
+        make_session(gid, 3600, datetime(2025, 1, 15, 10, 0)), # Week 3
+        make_session(gid, 1800, datetime(2025, 1, 16, 10, 0)), # Week 3
+        make_session(gid, 7200, datetime(2025, 3, 5, 10, 0)),  # Week 10
+        make_session(gid, 3600, datetime(2024, 1, 15, 10, 0)), # Wrong year
     )
     result = sessions_by_week(sessions, 2025)
-    assert result[1] == 3.0
-    assert result[2] == 1.0
+    assert result.get(3) == 1.5
+    assert result.get(10) == 2.0
     assert len(result) == 2
+
+def test_sessions_by_week_empty():
+    assert sessions_by_week((), 2025) == {}
+
+# --- Milestone Statistics Tests ---
 
 def test_milestones_by_status():
     gid = uuid4()
-    m1 = Milestone(id=uuid4(), goal_id=gid, title="M1", milestone_type="custom", status="achieved", target_date=date.today())
-    m2 = Milestone(id=uuid4(), goal_id=gid, title="M2", milestone_type="custom", status="planned", target_date=date.today())
-    m3 = Milestone(id=uuid4(), goal_id=gid, title="M3", milestone_type="custom", status="planned", target_date=date.today())
-    
-    result = milestones_by_status((m1, m2, m3))
-    assert result["achieved"] == 1
-    assert result["planned"] == 2
-    assert result["missed"] == 0
+    milestones = (
+        make_milestone(gid, "planned"),
+        make_milestone(gid, "achieved"),
+        make_milestone(gid, "achieved"),
+        make_milestone(gid, "missed"),
+    )
+    result = milestones_by_status(milestones)
+    assert result == {"planned": 1, "achieved": 2, "missed": 1}
+
+def test_milestones_by_status_empty():
+    result = milestones_by_status(())
+    assert result == {"planned": 0, "achieved": 0, "missed": 0}
+
+# --- Goal Statistics Tests ---
+
+def test_goals_by_status():
+    goals = (
+        make_goal(status="active"),
+        make_goal(status="completed"),
+        make_goal(status="completed"),
+        make_goal(status="abandoned"),
+    )
+    result = goals_by_status(goals)
+    assert result == {"active": 1, "completed": 2, "abandoned": 1}
 
 def test_goals_by_status_empty():
     result = goals_by_status(())
     assert result == {"active": 0, "completed": 0, "abandoned": 0}
-
-def test_goals_by_status_counts():
-    goals = (
-        make_goal(status="active"),
-        make_goal(status="active"),
-        make_goal(status="completed"),
-        make_goal(status="abandoned"),
-        make_goal(status="completed"),
-        make_goal(status="completed"),
-    )
-    result = goals_by_status(goals)
-    assert result == {"active": 2, "completed": 3, "abandoned": 1}
 
 def test_goals_by_status_unexpected():
     goals = (
@@ -143,24 +161,44 @@ def test_goals_by_status_unexpected():
         make_goal(status="unknown_status"),
     )
     result = goals_by_status(goals)
-    # The actual implementation might include unexpected statuses in the result
     assert result["active"] == 1
     assert result["unknown_status"] == 1
+
+# --- Hours Per Goal Tests ---
 
 def test_hours_per_goal():
     gid1 = uuid4()
     gid2 = uuid4()
-    g1 = LearningGoal(id=gid1, title="Mathe", description="", target_hours=10, start_date=date.today(), end_date=date.today())
-    
-    now = datetime.now()
-    sessions = (
-        StudySession(id=uuid4(), goal_id=gid1, started_at=now, ended_at=now, duration_seconds=3600),
-        StudySession(id=uuid4(), goal_id=gid2, started_at=now, ended_at=now, duration_seconds=7200),
+    gid3 = uuid4()
+
+    goals = (
+        LearningGoal(id=gid1, title="Math", description="", target_hours=100.0, start_date=date(2025,1,1), end_date=date(2025,6,30), status="active"),
+        LearningGoal(id=gid2, title="Science", description="", target_hours=100.0, start_date=date(2025,1,1), end_date=date(2025,6,30), status="active")
     )
-    
-    result = hours_per_goal((g1,), sessions)
-    # Sorting should be descending by hours: gid2 (2h) then gid1 (1h)
+
+    sessions = (
+        make_session(gid1, 3600),   # Math 1h
+        make_session(gid2, 7200),   # Science 2h
+        make_session(gid1, 1800),   # Math 0.5h
+        make_session(gid3, 3600),   # Unknown goal 1h
+    )
+
+    result = hours_per_goal(goals, sessions)
+
+    # Expected order: Science (2h), Math (1.5h), Unbekannt (1h)
+    assert len(result) == 3
+
+    assert result[0]["goal_id"] == str(gid2)
+    assert result[0]["title"] == "Science"
     assert result[0]["hours"] == 2.0
-    assert result[0]["title"] == "Unbekannt"
-    assert result[1]["hours"] == 1.0
-    assert result[1]["title"] == "Mathe"
+
+    assert result[1]["goal_id"] == str(gid1)
+    assert result[1]["title"] == "Math"
+    assert result[1]["hours"] == 1.5
+
+    assert result[2]["goal_id"] == str(gid3)
+    assert result[2]["title"] == "Unbekannt"
+    assert result[2]["hours"] == 1.0
+
+def test_hours_per_goal_empty():
+    assert hours_per_goal((), ()) == []
