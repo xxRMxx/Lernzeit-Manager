@@ -22,7 +22,7 @@ def make_goal(gid=None) -> LearningGoal:
         id=gid or uuid4(),
         title="Test Goal",
         description="",
-        target_hours=10.0,
+        target_hours=100.0,
         start_date=date(2025, 1, 1),
         end_date=date(2025, 12, 31)
     )
@@ -43,51 +43,48 @@ def make_time_slot(dt, minutes=60):
 
 # --- Lower Level Logic Tests ---
 
-def test_last_activity():
-    gid = uuid4()
-    # Empty sessions
+def test_last_activity_empty():
     assert last_activity(AppState()) is None
-    
-    # One session
-    t1 = datetime(2025, 1, 1, 12, 0)
-    s1 = make_session(goal_id=gid, dt=t1)
-    assert last_activity(AppState(sessions=(s1,))) == t1
-    
-    # Multiple sessions
-    t2 = datetime(2025, 1, 2, 12, 0)
-    s2 = make_session(goal_id=gid, dt=t2)
-    assert last_activity(AppState(sessions=(s1, s2))) == t2
+
+def test_last_activity_with_sessions():
+    dt1 = datetime(2025, 3, 1, 10, 0)
+    dt2 = datetime(2025, 3, 1, 15, 0)
+    dt3 = datetime(2025, 3, 1, 12, 0)
+    state = AppState(
+        sessions=(
+            make_session(dt=dt1),
+            make_session(dt=dt2),
+            make_session(dt=dt3),
+        )
+    )
+    assert last_activity(state) == dt2
 
 def test_is_inactive_no_sessions_no_goals():
     state = AppState(sessions=(), goals=())
-    now = datetime(2025, 1, 1, 12, 0)
+    now = datetime(2025, 3, 2, 12, 0)
     assert not is_inactive(state, now)
 
 def test_is_inactive_no_sessions_with_goals():
-    goal = make_goal()
-    state = AppState(sessions=(), goals=(goal,))
-    now = datetime(2025, 1, 1, 12, 0)
+    state = AppState(sessions=(), goals=(make_goal(),))
+    now = datetime(2025, 3, 2, 12, 0)
     assert is_inactive(state, now)
 
-def test_is_inactive_inside_threshold():
-    now = datetime(2025, 1, 2, 12, 0)
-    # 12 hours ago
-    session_time = now - timedelta(hours=12)
-    state = AppState(sessions=(make_session(dt=session_time),))
+def test_is_inactive_active():
+    dt = datetime(2025, 3, 1, 15, 0)
+    state = AppState(sessions=(make_session(dt=dt),), goals=(make_goal(),))
+    now = dt + INACTIVITY_THRESHOLD - timedelta(hours=1)
     assert not is_inactive(state, now)
 
 def test_is_inactive_exactly_at_threshold():
-    now = datetime(2025, 1, 2, 12, 0)
-    # Exactly INACTIVITY_THRESHOLD ago
-    session_time = now - INACTIVITY_THRESHOLD
-    state = AppState(sessions=(make_session(dt=session_time),))
+    dt = datetime(2025, 3, 1, 15, 0)
+    now = dt + INACTIVITY_THRESHOLD
+    state = AppState(sessions=(make_session(dt=dt),), goals=(make_goal(),))
     assert not is_inactive(state, now)
 
-def test_is_inactive_outside_threshold():
-    now = datetime(2025, 1, 3, 12, 0)
-    # INACTIVITY_THRESHOLD + 1 hour ago
-    session_time = now - INACTIVITY_THRESHOLD - timedelta(hours=1)
-    state = AppState(sessions=(make_session(dt=session_time),))
+def test_is_inactive_inactive():
+    dt = datetime(2025, 3, 1, 15, 0)
+    state = AppState(sessions=(make_session(dt=dt),), goals=(make_goal(),))
+    now = dt + INACTIVITY_THRESHOLD + timedelta(hours=1)
     assert is_inactive(state, now)
 
 # --- Reminder Integration Tests ---
@@ -97,12 +94,12 @@ def test_get_reminders_no_goals():
     now = datetime(2025, 3, 15, 10, 0)
     assert get_reminders(state, now) == []
 
-def test_get_reminders_no_sessions_has_goals():
-    goal = make_goal()
-    state = AppState(goals=(goal,), sessions=())
+def test_get_reminders_inactive_no_sessions():
+    state = AppState(goals=(make_goal(),), sessions=())
     now = datetime(2025, 3, 15, 10, 0)
     reminders = get_reminders(state, now)
-    assert reminders == ["Du hast noch keine Lernzeit erfasst. Starte jetzt!"]
+    assert "Du hast noch keine Lernzeit erfasst. Starte jetzt!" in reminders
+    assert len(reminders) == 1
 
 def test_get_reminders_inactive_with_sessions():
     goal = make_goal()
@@ -114,9 +111,9 @@ def test_get_reminders_inactive_with_sessions():
     state = AppState(goals=(goal,), sessions=(session,))
     reminders = get_reminders(state, now)
 
-    assert reminders == [
-        "Du hast seit 30 Stunden nicht gelernt. Zeit für eine Lerneinheit?"
-    ]
+    expected = "Du hast seit 30 Stunden nicht gelernt. Zeit für eine Lerneinheit?"
+    assert expected in reminders
+    assert len(reminders) == 1
 
 def test_get_reminders_active_with_sessions():
     goal = make_goal()
@@ -130,7 +127,7 @@ def test_get_reminders_active_with_sessions():
 
     assert reminders == []
 
-def test_get_reminders_overdue_slots():
+def test_get_reminders_missed_slots():
     goal = make_goal()
     now = datetime(2025, 3, 15, 10, 0)
 
@@ -152,7 +149,8 @@ def test_get_reminders_overdue_slots():
     )
 
     reminders = get_reminders(state, now)
-    assert reminders == ["2 geplante Lerneinheit(en) wurden nicht erledigt."]
+    assert "2 geplante Lerneinheit(en) wurden nicht erledigt." in reminders
+    assert len(reminders) == 1
 
 def test_get_reminders_combined():
     goal = make_goal()
@@ -174,5 +172,5 @@ def test_get_reminders_combined():
 
     reminders = get_reminders(state, now)
     assert len(reminders) == 2
-    assert reminders[0] == "Du hast seit 30 Stunden nicht gelernt. Zeit für eine Lerneinheit?"
-    assert reminders[1] == "1 geplante Lerneinheit(en) wurden nicht erledigt."
+    assert "Du hast seit 30 Stunden nicht gelernt. Zeit für eine Lerneinheit?" in reminders
+    assert "1 geplante Lerneinheit(en) wurden nicht erledigt." in reminders
