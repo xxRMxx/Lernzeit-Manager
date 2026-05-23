@@ -1,8 +1,7 @@
 # Lernzeit-Manager Makefile
 
-.PHONY: help install-all run-flet test-flet test-e2e backend-run backend-migrate frontend-run frontend-build clean docker-up docker-build docker-down
+.PHONY: help backend-run backend-migrate backend-shell frontend-run frontend-build frontend-lint install-all clean docker-up docker-build docker-down
 
-PYTHON_FLET = .venv/bin/python3
 PYTHON_BACKEND = backend/.venv/bin/python3
 
 help:
@@ -10,10 +9,6 @@ help:
 	@echo "  make docker-up       - Startet die Container (API: 8000, Frontend: 5173)"
 	@echo "  make docker-build    - Baut die Docker-Images neu"
 	@echo "  make docker-down     - Stoppt die Container"
-	@echo ""
-	@echo "  make run-flet        - Startet die ursprüngliche Flet-Anwendung"
-	@echo "  make test-flet       - Führt Unit-Tests für die Flet-Logik aus"
-	@echo "  make test-e2e        - Führt E2E-Tests für die Flet-App aus"
 	@echo ""
 	@echo "  make backend-run     - Startet den Django Development Server"
 	@echo "  make backend-migrate - Führt Django-Migrationen aus"
@@ -23,7 +18,7 @@ help:
 	@echo "  make frontend-build  - Erstellt den Production-Build des Frontends"
 	@echo "  make frontend-lint   - Führt ESLint für das Frontend aus"
 	@echo ""
-	@echo "  make install-all     - Installiert alle Abhängigkeiten (Root, Backend, Frontend)"
+	@echo "  make install-all     - Installiert alle Abhängigkeiten (Backend, Frontend)"
 	@echo "  make clean           - Entfernt Caches und Build-Artefakte"
 
 # --- Docker ---
@@ -35,16 +30,6 @@ docker-build:
 
 docker-down:
 	docker compose down
-
-# --- Legacy Flet App ---
-run-flet:
-	$(PYTHON_FLET) main.py
-
-test-flet:
-	$(PYTHON_FLET) -m pytest tests/
-
-test-e2e:
-	$(PYTHON_FLET) -m pytest Tests/test_e2e.py -v
 
 # --- Web Backend (Django) ---
 backend-run:
@@ -69,12 +54,10 @@ frontend-lint:
 
 # --- Setup & Maintenance ---
 install-all:
-	@echo "Installiere Root-Abhängigkeiten..."
-	python3 -m venv .venv && $(PYTHON_FLET) -m pip install -r requirements.txt
 	@echo "Installiere Backend-Abhängigkeiten..."
 	cd backend && python3 -m venv .venv && ./.venv/bin/python3 -m pip install -r requirements.txt
 	@echo "Installiere Frontend-Abhängigkeiten..."
-	cd frontend && npm install
+	cd frontend && npm install --legacy-peer-deps
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +

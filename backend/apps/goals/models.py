@@ -87,3 +87,32 @@ class Milestone(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class RoughPlan(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    goal = models.ForeignKey(Goal, on_delete=models.CASCADE, related_name='rough_plans')
+    year = models.IntegerField()
+    month = models.IntegerField()
+    planned_hours = models.FloatField()
+    note = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = ('goal', 'year', 'month')
+
+    def __str__(self):
+        return f'{self.goal.title} - {self.month}/{self.year}: {self.planned_hours}h'
+
+
+class TimeSlot(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    goal = models.ForeignKey(Goal, on_delete=models.CASCADE, related_name='time_slots')
+    date = models.DateField()
+    planned_minutes = models.IntegerField()
+    note = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = ('goal', 'date')
+
+    def __str__(self):
+        return f'{self.goal.title} am {self.date}: {self.planned_minutes}min'
