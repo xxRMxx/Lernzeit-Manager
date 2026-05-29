@@ -38,6 +38,9 @@ export interface Goal {
   start_date: string | null
   end_date: string | null
   visibility: 'PRIVATE' | 'SHARED' | 'COLLABORATIVE'
+  progress_percent: number
+  open_milestones: number
+  own_hours: number
   created_at: string
   memberships: Membership[]
   plans: Plan[]

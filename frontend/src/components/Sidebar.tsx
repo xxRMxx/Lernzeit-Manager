@@ -1,46 +1,114 @@
 import { NavLink } from 'react-router-dom'
 import { useLogout } from '../api/auth'
+import { 
+  LayoutDashboard, 
+  Target, 
+  CalendarDays, 
+  TimerIcon, 
+  BarChart2, 
+  GraduationCap, 
+  Settings, 
+  ChevronRight,
+  LogOut
+} from "lucide-react";
+import { useAuthStore } from '../store/auth';
 
 const links = [
-  { to: '/', label: 'Dashboard', icon: '🏠' },
-  { to: '/goals', label: 'Lernziele', icon: '🎯' },
-  { to: '/stopwatch', label: 'Stoppuhr', icon: '⏱' },
-  { to: '/milestones', label: 'Meilensteine', icon: '🏁' },
-  { to: '/planning', label: 'Planung', icon: '📅' },
-  { to: '/settings', label: 'Einstellungen', icon: '⚙️' },
+  { to: '/', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+  { to: '/goals', label: 'Lernziele', icon: <Target size={18} /> },
+  { to: '/planning', label: 'Lernplan', icon: <CalendarDays size={18} /> },
+  { to: '/stopwatch', label: 'Timer', icon: <TimerIcon size={18} /> },
+  { to: '/milestones', label: 'Auswertung', icon: <BarChart2 size={18} /> },
 ]
 
 export default function Sidebar() {
   const logout = useLogout()
+  const user = useAuthStore((s) => s.user)
 
   return (
-    <aside className="hidden md:flex flex-col w-56 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 min-h-screen p-4 flex-shrink-0 transition-colors">
-      <h1 className="text-lg font-bold text-primary-600 dark:text-primary-400 mb-6">Lernzeit</h1>
-      <nav className="flex flex-col gap-1 flex-1">
-        {links.map((l) => (
+    <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-card border-r border-slate-100 dark:border-border min-h-screen flex-shrink-0 shadow-sm transition-colors">
+      {/* Logo */}
+      <div className="px-5 py-6 border-b border-slate-100 dark:border-border">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shadow-md">
+            <GraduationCap size={20} className="text-white" />
+          </div>
+          <div>
+            <p className="text-slate-800 dark:text-foreground font-semibold text-sm">Lernzeit</p>
+            <p className="text-indigo-500 leading-none text-xs mt-0.5">Manager</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 px-3 py-6 space-y-1">
+        <p className="text-xs text-slate-400 px-3 mb-2 uppercase tracking-wider font-medium">Navigation</p>
+        {links.map((link) => (
           <NavLink
-            key={l.to}
-            to={l.to}
-            end={l.to === '/'}
+            key={link.to}
+            to={link.to}
+            end={link.to === '/'}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+              `w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all ${
                 isActive
-                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-semibold'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 font-semibold"
+                  : "text-slate-500 hover:bg-slate-50 dark:hover:bg-accent hover:text-slate-700 dark:hover:text-foreground"
               }`
             }
           >
-            <span>{l.icon}</span>
-            {l.label}
+            {({ isActive }) => (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className={isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"}>
+                    {link.icon}
+                  </span>
+                  <span>{link.label}</span>
+                </div>
+                {isActive && <ChevronRight size={14} className="text-indigo-400" />}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
-      <button
-        onClick={() => logout.mutate()}
-        className="text-sm text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-left px-3 py-2 mt-4"
-      >
-        Abmelden
-      </button>
+
+      {/* User profile at bottom */}
+      <div className="px-3 pb-6 space-y-2">
+        <NavLink 
+          to="/settings"
+          className={({ isActive }) => 
+            `w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
+              isActive 
+                ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 font-semibold" 
+                : "text-slate-500 hover:bg-slate-50 dark:hover:bg-accent hover:text-slate-700 dark:hover:text-foreground"
+            }`
+          }
+        >
+          <Settings size={17} className="text-slate-400" />
+          <span>Einstellungen</span>
+        </NavLink>
+        
+        <button 
+          onClick={() => logout.mutate()}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition-all"
+        >
+          <LogOut size={17} className="text-slate-400" />
+          <span>Abmelden</span>
+        </button>
+
+        <div className="mt-4 flex items-center gap-3 px-3 py-3 bg-slate-50 dark:bg-muted rounded-xl">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-xs font-bold">
+              {user?.display_name?.substring(0, 2).toUpperCase() || 'LM'}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-slate-700 dark:text-foreground text-xs font-bold truncate">
+              {user?.display_name || user?.email || 'Gast'}
+            </p>
+            <p className="text-slate-400 text-[10px] truncate">Lern-Profil aktiv</p>
+          </div>
+        </div>
+      </div>
     </aside>
   )
 }
