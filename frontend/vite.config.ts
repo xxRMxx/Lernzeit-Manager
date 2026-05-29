@@ -1,38 +1,15 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
-  return {
-    plugins: [
-      react(),
-      VitePWA({
-        registerType: 'autoUpdate',
-        manifest: {
-          name: 'Lernzeit-Manager',
-          short_name: 'Lernzeit',
-          description: 'Verwalte deine Lernziele',
-          theme_color: '#2563eb',
-          background_color: '#ffffff',
-          display: 'standalone',
-          orientation: 'portrait',
-          start_url: '/',
-          icons: [
-            { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-            { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          ],
-        },
-      }),
-    ],
-    server: {
-      host: true,
-      proxy: {
-        '/api': {
-          target: env.VITE_API_URL || 'http://localhost:8000',
-          changeOrigin: true,
-        },
-      },
-    },
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    host: true, // sorgt dafür, dass Vite auf 0.0.0.0 lauscht (hast du bereits aktiv)
+    port: 5173,
+    allowedHosts: [
+      '.sslip.io',   // Erlaubt frontend.178.105... und backend.178.105...
+      'localhost',
+      '127.0.0.1'
+    ]
   }
 })
