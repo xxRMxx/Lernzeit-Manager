@@ -10,7 +10,7 @@ if DEBUG:
 else:
     SECRET_KEY = os.environ['SECRET_KEY']
 
-ALLOWED_HOSTS = [host.strip() for host in os.environ.get('ALLOWED_HOSTS', '').split(',') if host.strip()]
+ALLOWED_HOSTS = [host.strip() for host in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if host.strip()]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -109,6 +109,16 @@ REST_AUTH = {
 }
 
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all for development, restrict in production
+if not DEBUG:
+	CORS_ALLOWED_ORIGINS = [
+		origin.strip()
+		for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
+		for origin in [origin.strip()]
+        	if origin
+	]
+
+
+
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if origin.strip()]
 CORS_ALLOW_CREDENTIALS = True
 
