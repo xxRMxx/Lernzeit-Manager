@@ -68,10 +68,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'lernzeit.wsgi.application'
 
+if os.path.exists('/app/db_prod'):
+    DATABASE_PATH = Path('/app/db_prod') / 'db.sqlite3'
+else:
+    DATABASE_PATH = BASE_DIR / 'db.sqlite3'
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DATABASE_PATH,
     }
 }
 
