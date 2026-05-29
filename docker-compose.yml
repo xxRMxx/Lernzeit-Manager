@@ -24,6 +24,7 @@ services:
       - backend
     environment:
       - VITE_API_URL=http://backend.178.105.245.179.sslip.io
+      - VITE_ALLOW_ALLOWED_HOSTS=true
     labels:
       - "coolify.managed=true"
       - "coolify.zodiac.path=/"
