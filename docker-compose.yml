@@ -4,10 +4,6 @@ services:
   backend:
     build:
       context: ./backend
-    #ports:
-    #  - "8000:8000"
-    volumes:
-      - ./backend:/app
     environment:
       - PYTHONUNBUFFERED=1
       - ALLOWED_HOSTS=backend,localhost,127.0.0.1,backend.178.105.245.179.sslip.io
@@ -15,16 +11,21 @@ services:
       bash -c "python manage.py makemigrations &&
                python manage.py migrate &&
                python manage.py runserver 0.0.0.0:8000"
+    labels:
+      - "coolify.managed=true"
+      - "coolify.zodiac.path=/"
+      # Hier sagen wir Coolify, dass das Backend intern auf Port 8000 läuft:
+      - "coolify.zodiac.port=8000"
 
   frontend:
     build:
       context: ./frontend
-    #ports:
-    #  - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     depends_on:
       - backend
     environment:
       - VITE_API_URL=http://backend.178.105.245.179.sslip.io
+    labels:
+      - "coolify.managed=true"
+      - "coolify.zodiac.path=/"
+      # Hier sagen wir Coolify, dass das Frontend intern auf Port 5173 läuft:
+      - "coolify.zodiac.port=5173"
