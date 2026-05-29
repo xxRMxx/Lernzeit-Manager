@@ -1,27 +1,13 @@
-import axios from 'axios'
-import { useAuthStore } from '../store/auth'
+import axios from 'axios';
+
+// Liest die URL aus Coolify aus. Wenn sie nicht existiert, nutzt er die relative '/api'
+const apiBaseUrl = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL}/api` 
+  : '/api';
 
 const client = axios.create({
-  baseURL: '/api',
+  baseURL: apiBaseUrl,
   headers: { 'Content-Type': 'application/json' },
-})
+});
 
-client.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token
-  if (token) {
-    config.headers.Authorization = `Token ${token}`
-  }
-  return config
-})
-
-client.interceptors.response.use(
-  (res) => res,
-  (error) => {
-    if (error.response?.status === 401) {
-      useAuthStore.getState().logout()
-    }
-    return Promise.reject(error)
-  }
-)
-
-export default client
+export default client;
