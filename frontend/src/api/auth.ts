@@ -14,9 +14,9 @@ export function useLogin() {
     mutationFn: (data: LoginData) =>
       client.post<{ key: string }>('/auth/login/', data).then((r) => r.data),
     onSuccess: async (data) => {
-      const me = await client.get('/users/me/', {
-        headers: { Authorization: `Token ${data.key}` },
-      })
+      // Wir setzen erst den Token, damit der Interceptor ihn für den /me/ Call findet
+      setAuth(data.key, null as any) 
+      const me = await client.get('/users/me/')
       setAuth(data.key, me.data)
       navigate('/')
     },
@@ -31,9 +31,9 @@ export function useRegister() {
     mutationFn: (data: RegisterData) =>
       client.post<{ key: string }>('/auth/registration/', data).then((r) => r.data),
     onSuccess: async (data) => {
-      const me = await client.get('/users/me/', {
-        headers: { Authorization: `Token ${data.key}` },
-      })
+      // Wir setzen erst den Token, damit der Interceptor ihn für den /me/ Call findet
+      setAuth(data.key, null as any) 
+      const me = await client.get('/users/me/')
       setAuth(data.key, me.data)
       navigate('/')
     },
