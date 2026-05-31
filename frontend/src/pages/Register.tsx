@@ -9,6 +9,19 @@ export default function Register() {
   const [password2, setPassword2] = useState('')
   const register = useRegister()
 
+  const getErrorMessage = () => {
+    if (!register.error) return null
+    const data = (register.error as any).response?.data
+    if (typeof data === 'string') return data
+    if (data && typeof data === 'object') {
+      // Gibt die erste Fehlermeldung zurück, die im Objekt gefunden wird
+      const firstError = Object.values(data)[0]
+      if (Array.isArray(firstError)) return firstError[0]
+      if (typeof firstError === 'string') return firstError
+    }
+    return 'Registrierung fehlgeschlagen. Bitte prüfe deine Eingaben.'
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     register.mutate({ email, password1, password2 })
@@ -79,7 +92,7 @@ export default function Register() {
             {register.isError && (
               <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
                 <span className="text-lg">⚠️</span>
-                Registrierung fehlgeschlagen. Bitte prüfe deine Eingaben.
+                {getErrorMessage()}
               </div>
             )}
 

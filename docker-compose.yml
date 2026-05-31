@@ -6,12 +6,21 @@ services:
       context: ./backend
     environment:
       - PYTHONUNBUFFERED=1
-      # Hier nutzen wir Variablen, die lokal oder auf dem Server definiert werden:
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-backend,localhost,127.0.0.1}
+      - DEBUG=${DEBUG:-true}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+    # Hier sagen wir Coolify, wo die SQLite-Datei auf dem Server sicher liegen soll:
+    volumes:
+      - sqlite_data:/app/db_prod
     command: >
       bash -c "python manage.py makemigrations &&
                python manage.py migrate &&
                python manage.py runserver 0.0.0.0:8000"
+    labels:
+      - "coolify.managed=true"
+      - "coolify.zodiac.path=/"
+      - "coolify.zodiac.port=8000"
 
   frontend:
     build:
@@ -19,5 +28,12 @@ services:
     depends_on:
       - backend
     environment:
-      # Auch hier greift die Variable:
-      - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+      - VITE_API_URL=${VITE_API_URL}
+    labels:
+      - "coolify.managed=true"
+      - "coolify.zodiac.path=/"
+      - "coolify.zodiac.port=5173"
+
+# Das dauerhafte Volume für deine SQLite-Datei
+volumes:
+  sqlite_data:

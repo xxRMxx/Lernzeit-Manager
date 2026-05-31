@@ -4,10 +4,16 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: true, // sorgt dafür, dass Vite auf 0.0.0.0 lauscht (hast du bereits aktiv)
+    host: true, // sorgt dafür, dass Vite auf 0.0.0.0 lauscht
     port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
     allowedHosts: [
-      '.sslip.io',   // Erlaubt frontend.178.105... und backend.178.105...
+      '.sslip.io',
       'localhost',
       '127.0.0.1'
     ]
