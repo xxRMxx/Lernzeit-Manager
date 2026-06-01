@@ -13,7 +13,8 @@ export default function GoalForm({ initial, onSubmit, onCancel, isPending }: Pro
   const [title, setTitle] = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [targetHours, setTargetHours] = useState(String(initial?.target_hours ?? ''))
-  const [startDate, setStartDate] = useState(initial?.start_date ?? '')
+  const today = new Date().toISOString().split('T')[0]
+  const [startDate, setStartDate] = useState(initial?.start_date ?? today)
   const [endDate, setEndDate] = useState(initial?.end_date ?? '')
   const [visibility, setVisibility] = useState<Goal['visibility']>(initial?.visibility ?? 'PRIVATE')
 
@@ -33,8 +34,9 @@ export default function GoalForm({ initial, onSubmit, onCancel, isPending }: Pro
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Title */}
       <div>
-        <label className="text-slate-600 dark:text-slate-400 text-sm block mb-2 font-medium">Titel des Lernziels *</label>
+        <label htmlFor="title" className="text-slate-600 dark:text-slate-400 text-sm block mb-2 font-medium">Titel des Lernziels *</label>
         <input
+          id="title"
           type="text"
           placeholder="z. B. Theoretische Informatik bestehen"
           value={title}
@@ -46,8 +48,9 @@ export default function GoalForm({ initial, onSubmit, onCancel, isPending }: Pro
 
       {/* Description */}
       <div>
-        <label className="text-slate-600 dark:text-slate-400 text-sm block mb-2 font-medium">Beschreibung</label>
+        <label htmlFor="description" className="text-slate-600 dark:text-slate-400 text-sm block mb-2 font-medium">Beschreibung</label>
         <textarea
+          id="description"
           placeholder="Notizen, Lerninhalte, etc."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -59,12 +62,13 @@ export default function GoalForm({ initial, onSubmit, onCancel, isPending }: Pro
       {/* Hours + Visibility in a row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
-          <label className="text-slate-600 dark:text-slate-400 text-sm block mb-2 font-medium">
+          <label htmlFor="target_hours" className="text-slate-600 dark:text-slate-400 text-sm block mb-2 font-medium">
             <Clock size={14} className="inline mr-1.5 text-slate-400" />
             Zielstunden gesamt
           </label>
           <div className="flex items-center gap-2">
             <input
+              id="target_hours"
               type="number"
               value={targetHours}
               onChange={(e) => setTargetHours(e.target.value)}
@@ -76,11 +80,12 @@ export default function GoalForm({ initial, onSubmit, onCancel, isPending }: Pro
         </div>
 
         <div>
-          <label className="text-slate-600 dark:text-slate-400 text-sm block mb-2 font-medium">
+          <label htmlFor="visibility" className="text-slate-600 dark:text-slate-400 text-sm block mb-2 font-medium">
             <Flag size={14} className="inline mr-1.5 text-slate-400" />
             Sichtbarkeit
           </label>
           <select
+            id="visibility"
             value={visibility}
             onChange={(e) => setVisibility(e.target.value as Goal['visibility'])}
             className="w-full border border-slate-200 dark:border-border rounded-xl px-4 py-3 text-slate-800 dark:text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 dark:focus:ring-indigo-900/20 bg-slate-50/50 dark:bg-muted/50 transition-all text-sm"
@@ -95,11 +100,12 @@ export default function GoalForm({ initial, onSubmit, onCancel, isPending }: Pro
       {/* Dates */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
-          <label className="text-slate-600 dark:text-slate-400 text-sm block mb-2 font-medium">
+          <label htmlFor="start_date" className="text-slate-600 dark:text-slate-400 text-sm block mb-2 font-medium">
             <Calendar size={14} className="inline mr-1.5 text-slate-400" />
             Startdatum
           </label>
           <input
+            id="start_date"
             type="date"
             value={startDate ?? ''}
             onChange={(e) => setStartDate(e.target.value)}
@@ -107,11 +113,12 @@ export default function GoalForm({ initial, onSubmit, onCancel, isPending }: Pro
           />
         </div>
         <div>
-          <label className="text-slate-600 dark:text-slate-400 text-sm block mb-2 font-medium">
+          <label htmlFor="end_date" className="text-slate-600 dark:text-slate-400 text-sm block mb-2 font-medium">
             <Calendar size={14} className="inline mr-1.5 text-slate-400" />
             Enddatum / Prüfung
           </label>
           <input
+            id="end_date"
             type="date"
             value={endDate ?? ''}
             onChange={(e) => setEndDate(e.target.value)}

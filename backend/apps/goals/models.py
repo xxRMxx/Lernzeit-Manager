@@ -111,8 +111,5 @@ class TimeSlot(models.Model):
     planned_minutes = models.IntegerField()
     note = models.TextField(blank=True)
 
-    class Meta:
-        unique_together = ('goal', 'date')
-
     def __str__(self):
         return f'{self.goal.title} am {self.date}: {self.planned_minutes}min'

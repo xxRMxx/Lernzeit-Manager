@@ -5,9 +5,8 @@ import { Bell } from 'lucide-react'
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/': { title: 'Dashboard', subtitle: 'Dein Lernfortschritt im Überblick' },
-  '/goals': { title: 'Lernziele', subtitle: 'Verwalte deine akademischen Ziele' },
-  '/stopwatch': { title: 'Lern-Timer', subtitle: 'Konzentriert lernen und Zeit erfassen' },
-  '/milestones': { title: 'Auswertung', subtitle: 'Deine Meilensteine und Fortschritte' },
+  '/goals': { title: 'Lernziele', subtitle: 'Verwalte deine Ziele und Fortschritte' },
+  '/stopwatch': { title: 'Lernzeit-Tracker', subtitle: 'Konzentriert lernen und Zeit erfassen' },
   '/planning': { title: 'Lernplan', subtitle: 'Strukturiere deine Lernwoche' },
   '/settings': { title: 'Einstellungen', subtitle: 'Personalisiere deine App-Erfahrung' },
 }
@@ -34,9 +33,6 @@ export default function Layout() {
                 <Bell size={17} />
               </button>
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-500 rounded-full text-[9px] text-white flex items-center justify-center">2</span>
-            </div>
-            <div className="text-[10px] md:text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-900/30">
-              {new Date().toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: 'short' })}
             </div>
           </div>
         </header>

@@ -20,6 +20,33 @@ export interface Plan {
   created_at: string
 }
 
+export interface RoughPlan {
+  id: string
+  year: number
+  month: number
+  planned_hours: number
+  note: string
+}
+
+export interface Session {
+  id: string
+  user: User
+  goal: string
+  goal_title: string
+  started_at: string
+  duration_seconds: number
+  note: string
+}
+
+export interface TimeSlot {
+  id: string
+  goal: string
+  goal_title: string
+  date: string
+  planned_minutes: number
+  note: string
+}
+
 export interface Milestone {
   id: string
   title: string
@@ -44,6 +71,8 @@ export interface Goal {
   created_at: string
   memberships: Membership[]
   plans: Plan[]
+  rough_plans: RoughPlan[]
+  time_slots: TimeSlot[]
   milestones: Milestone[]
 }
 
@@ -147,5 +176,79 @@ export function useCreatePlan(goalId: string) {
     mutationFn: (data: { weekly_hours: number }) =>
       client.post(`/goals/${goalId}/plans/`, data).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['goals', goalId] }),
+  })
+}
+
+export function useCreateSession(goalId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { started_at: string; duration_seconds: number; note?: string }) =>
+      client.post(`/goals/${goalId}/sessions/`, data).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['goals', goalId] })
+      qc.invalidateQueries({ queryKey: ['goals'] })
+      qc.invalidateQueries({ queryKey: ['sessions'] })
+    },
+  })
+}
+
+export function useCreateRoughPlan(goalId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { year: number; month: number; planned_hours: number; note?: string }) =>
+      client.post(`/goals/${goalId}/rough-plans/`, data).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['goals', goalId] }),
+  })
+}
+
+export function useCreateTimeSlot(goalId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { date: string; planned_minutes: number; note?: string }) =>
+      client.post(`/goals/${goalId}/time-slots/`, data).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['goals', goalId] })
+      qc.invalidateQueries({ queryKey: ['goals'] })
+      qc.invalidateQueries({ queryKey: ['time-slots'] })
+    },
+  })
+}
+
+export function useUpdateTimeSlot(goalId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...data }: Partial<TimeSlot> & { id: string }) =>
+      client.patch(`/goals/${goalId}/time-slots/${id}/`, data).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['goals', goalId] })
+      qc.invalidateQueries({ queryKey: ['goals'] })
+      qc.invalidateQueries({ queryKey: ['time-slots'] })
+    },
+  })
+}
+
+export function useDeleteTimeSlot(goalId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => client.delete(`/goals/${goalId}/time-slots/${id}/`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['goals', goalId] })
+      qc.invalidateQueries({ queryKey: ['goals'] })
+      qc.invalidateQueries({ queryKey: ['time-slots'] })
+    },
+  })
+}
+
+export function useGlobalSessions() {
+  return useQuery({
+    queryKey: ['sessions'],
+    queryFn: () => client.get<Session[]>('/sessions/').then((r) => r.data),
+  })
+}
+
+export function useGlobalTimeSlots() {
+  return useQuery({
+    queryKey: ['time-slots'],
+    queryFn: () => client.get<TimeSlot[]>('/time-slots/').then((r) => r.data),
   })
 }

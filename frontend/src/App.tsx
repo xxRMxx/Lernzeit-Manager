@@ -8,7 +8,6 @@ import Dashboard from './pages/Dashboard'
 import GoalList from './pages/Goals/GoalList'
 import GoalDetail from './pages/Goals/GoalDetail'
 import Stopwatch from './pages/Stopwatch'
-import Milestones from './pages/Milestones'
 import Planning from './pages/Planning'
 import Settings from './pages/Settings'
 
@@ -25,7 +24,6 @@ export default function App() {
           <Route path="/goals" element={<GoalList />} />
           <Route path="/goals/:id" element={<GoalDetail />} />
           <Route path="/stopwatch" element={<Stopwatch />} />
-          <Route path="/milestones" element={<Milestones />} />
           <Route path="/planning" element={<Planning />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
