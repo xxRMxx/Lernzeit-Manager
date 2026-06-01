@@ -10,6 +10,11 @@ urlpatterns = [
     path('goals/<uuid:goal_id>/milestones/', views.MilestoneListCreateView.as_view(), name='milestone-list'),
     path('goals/<uuid:goal_id>/milestones/<uuid:pk>/', views.MilestoneDetailView.as_view(), name='milestone-detail'),
     path('goals/<uuid:goal_id>/plans/', views.PlanListCreateView.as_view(), name='plan-list'),
+    path('goals/<uuid:goal_id>/rough-plans/', views.RoughPlanListCreateView.as_view(), name='rough-plan-list'),
+    path('goals/<uuid:goal_id>/time-slots/', views.TimeSlotListCreateView.as_view(), name='time-slot-list'),
+    path('goals/<uuid:goal_id>/time-slots/<uuid:pk>/', views.TimeSlotDetailView.as_view(), name='time-slot-detail'),
     path('goals/<uuid:goal_id>/stats/', views.goal_stats, name='goal-stats'),
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('sessions/', views.GlobalSessionListView.as_view(), name='global-session-list'),
+    path('time-slots/', views.GlobalTimeSlotListView.as_view(), name='global-time-slot-list'),
 ]

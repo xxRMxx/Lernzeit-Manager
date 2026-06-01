@@ -95,7 +95,19 @@ REST_FRAMEWORK = {
     ],
 }
 
-CSRF_TRUSTED_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173']
+# CSRF settings for production
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip() 
+    for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',') 
+    if origin.strip()
+]
+
+# HTTPS settings (needed when behind a proxy like Coolify/Nginx)
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'true').lower() == 'true'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
@@ -117,19 +129,16 @@ REST_AUTH = {
     'REGISTER_SERIALIZER': 'apps.users.serializers.CustomRegisterSerializer',
 }
 
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all for development, restrict in production
-if not DEBUG:
-	CORS_ALLOWED_ORIGINS = [
-		origin.strip()
-		for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
-		for origin in [origin.strip()]
-        	if origin
-	]
-
-
-
-CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if origin.strip()]
+# CORS settings
 CORS_ALLOW_CREDENTIALS = True
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOWED_ORIGINS = [
+        origin.strip()
+        for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
+        if origin.strip()
+    ]
 
 LANGUAGE_CODE = 'de-de'
 TIME_ZONE = 'Europe/Berlin'

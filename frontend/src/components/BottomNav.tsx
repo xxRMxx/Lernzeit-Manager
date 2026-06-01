@@ -10,8 +10,7 @@ import {
 const links = [
   { to: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
   { to: '/goals', label: 'Ziele', icon: <Target size={20} /> },
-  { to: '/stopwatch', label: 'Timer', icon: <TimerIcon size={20} /> },
-  { to: '/milestones', label: 'Auswertung', icon: <BarChart2 size={20} /> },
+  { to: '/stopwatch', label: 'Tracker', icon: <TimerIcon size={20} /> },
   { to: '/settings', label: 'Settings', icon: <Settings size={20} /> },
 ]
 

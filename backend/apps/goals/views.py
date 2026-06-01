@@ -6,11 +6,12 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Goal, GoalMembership, Plan, Session, Milestone
+from .models import Goal, GoalMembership, Plan, Session, Milestone, RoughPlan, TimeSlot
 from .permissions import CanAccessGoal, IsGoalOwner, get_user_role
 from .serializers import (
     GoalSerializer, GoalListSerializer, MembershipSerializer,
     PlanSerializer, SessionSerializer, MilestoneSerializer,
+    RoughPlanSerializer, TimeSlotSerializer,
 )
 
 
@@ -128,6 +129,58 @@ class PlanListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(goal=self.get_goal())
+
+
+class RoughPlanListCreateView(generics.ListCreateAPIView):
+    serializer_class = RoughPlanSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_goal(self):
+        return generics.get_object_or_404(Goal, pk=self.kwargs['goal_id'])
+
+    def get_queryset(self):
+        return RoughPlan.objects.filter(goal=self.get_goal())
+
+    def perform_create(self, serializer):
+        serializer.save(goal=self.get_goal())
+
+
+class TimeSlotListCreateView(generics.ListCreateAPIView):
+    serializer_class = TimeSlotSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_goal(self):
+        return generics.get_object_or_404(Goal, pk=self.kwargs['goal_id'])
+
+    def get_queryset(self):
+        return TimeSlot.objects.filter(goal=self.get_goal())
+
+    def perform_create(self, serializer):
+        serializer.save(goal=self.get_goal())
+
+
+class TimeSlotDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = TimeSlotSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return TimeSlot.objects.filter(goal__owner=self.request.user)
+
+
+class GlobalSessionListView(generics.ListAPIView):
+    serializer_class = SessionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Session.objects.filter(user=self.request.user).order_by('-started_at')
+
+
+class GlobalTimeSlotListView(generics.ListAPIView):
+    serializer_class = TimeSlotSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return TimeSlot.objects.filter(goal__owner=self.request.user).order_by('-date')
 
 
 @api_view(['GET'])
