@@ -2,15 +2,14 @@ import { NavLink } from 'react-router-dom'
 import { 
   LayoutDashboard, 
   Target, 
-  TimerIcon, 
-  BarChart2, 
+  Clock, 
   Settings 
 } from "lucide-react";
 
 const links = [
   { to: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
   { to: '/goals', label: 'Ziele', icon: <Target size={20} /> },
-  { to: '/stopwatch', label: 'Tracker', icon: <TimerIcon size={20} /> },
+  { to: '/stopwatch', label: 'Tracker', icon: <Clock size={20} /> },
   { to: '/settings', label: 'Settings', icon: <Settings size={20} /> },
 ]
 

@@ -4,9 +4,8 @@ import { useLogout } from '../api/auth'
 import { 
   LayoutDashboard, 
   Target, 
-  CalendarDays, 
-  TimerIcon, 
-  BarChart2, 
+  Calendar, 
+  Clock, 
   GraduationCap, 
   Settings, 
   ChevronRight,
@@ -18,8 +17,8 @@ import { useAuthStore } from '../store/auth';
 const links = [
   { to: '/', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
   { to: '/goals', label: 'Lernziele', icon: <Target size={18} /> },
-  { to: '/planning', label: 'Lernplan', icon: <CalendarDays size={18} /> },
-  { to: '/stopwatch', label: 'Lernzeit-Tracker', icon: <TimerIcon size={18} /> },
+  { to: '/planning', label: 'Lernzeiten-Planer', icon: <Calendar size={18} /> },
+  { to: '/stopwatch', label: 'Lernzeit-Tracker', icon: <Clock size={18} /> },
 ]
 
 export default function Sidebar() {

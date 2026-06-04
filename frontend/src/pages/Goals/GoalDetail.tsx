@@ -1,20 +1,29 @@
 import { useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useGoal, useGoalStats, useUpdateGoal, useDeleteGoal } from '../../api/goals'
+import { useParams, useNavigate } from 'react-router-dom'
+import { useGoal, useGoalStats, useUpdateGoal, useDeleteGoal, useAddMember } from '../../api/goals'
 import GoalForm from './GoalForm'
+import { format } from "date-fns";
 import { 
   ChevronLeft, 
-  Edit3, 
+  Edit2, 
   Trash2, 
-  Target, 
   Clock, 
   TrendingUp, 
-  CheckCircle2, 
   Users, 
   Calendar,
-  MoreVertical,
   Flag
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../../components/ui/dialog";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
 
 export default function GoalDetail() {
   const { id } = useParams<{ id: string }>()
@@ -23,13 +32,34 @@ export default function GoalDetail() {
   const { data: stats } = useGoalStats(id!)
   const updateGoal = useUpdateGoal(id!)
   const deleteGoal = useDeleteGoal()
+  const addMember = useAddMember(id!)
+  
   const [editing, setEditing] = useState(false)
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<'VIEWER' | 'CONTRIBUTOR'>('VIEWER')
 
   if (isLoading || !goal) return (
     <div className="flex justify-center items-center h-64">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
     </div>
   )
+
+  const handleInvite = (e: React.FormEvent) => {
+    e.preventDefault()
+    addMember.mutate(
+      { email: inviteEmail, role: inviteRole },
+      {
+        onSuccess: () => {
+          setInviteOpen(false)
+          setInviteEmail('')
+        },
+        onError: (error: any) => {
+          alert(error.response?.data?.email || error.response?.data?.detail || 'Ein Fehler ist aufgetreten.')
+        }
+      }
+    )
+  }
 
   const progressPct = stats?.progress_percent || 0;
 
@@ -49,7 +79,7 @@ export default function GoalDetail() {
             onClick={() => setEditing(!editing)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 dark:border-border text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-accent text-sm font-bold transition-all"
           >
-            <Edit3 size={16} />
+            <Edit2 size={16} />
             {editing ? 'Abbrechen' : 'Bearbeiten'}
           </button>
           <button 
@@ -133,7 +163,7 @@ export default function GoalDetail() {
                       <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Zeitraum</p>
                       <p className="text-base font-bold text-slate-700 dark:text-foreground flex items-center gap-2">
                         <Calendar size={16} className="text-slate-300" />
-                        {goal.start_date ? new Date(goal.start_date).toLocaleDateString('de-DE') : '—'} - {goal.end_date ? new Date(goal.end_date).toLocaleDateString('de-DE') : '—'}
+                        {goal.start_date ? format(new Date(goal.start_date), 'dd.MM.yyyy') : '—'} - {goal.end_date ? format(new Date(goal.end_date), 'dd.MM.yyyy') : '—'}
                       </p>
                     </div>
                     <div className="space-y-1">
@@ -182,7 +212,10 @@ export default function GoalDetail() {
                     </div>
                   ))}
 
-                  <button className="flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-100 dark:border-border rounded-xl text-slate-400 hover:text-indigo-500 hover:border-indigo-100 transition-all text-xs font-bold px-4">
+                  <button 
+                    onClick={() => setInviteOpen(true)}
+                    className="flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-100 dark:border-border rounded-xl text-slate-400 hover:text-indigo-500 hover:border-indigo-100 transition-all text-xs font-bold px-4"
+                  >
                     + Mitglied einladen
                   </button>
                 </div>
@@ -191,6 +224,49 @@ export default function GoalDetail() {
           </>
         )}
       </div>
+
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Mitglied einladen</DialogTitle>
+            <DialogDescription>
+              Gib die E-Mail-Adresse der Person ein, die du zu diesem Lernziel einladen möchtest.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleInvite}>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="email">E-Mail-Adresse</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="name@beispiel.de"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="role">Rolle</Label>
+                <select
+                  id="role"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value as 'VIEWER' | 'CONTRIBUTOR')}
+                >
+                  <option value="VIEWER">Betrachter</option>
+                  <option value="CONTRIBUTOR">Mitwirkender</option>
+                </select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={addMember.isPending}>
+                {addMember.isPending ? 'Wird eingeladen...' : 'Einladung senden'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

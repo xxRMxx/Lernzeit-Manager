@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
-import { useGoals } from '../api/goals'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { useGoals, useGlobalTimeSlots } from '../api/goals'
 import { useSaveSession } from '../api/sessions'
+import { format } from 'date-fns'
 import { 
   Play, 
   Pause, 
@@ -9,9 +11,11 @@ import {
   PenLine, 
   Keyboard, 
   RotateCcw, 
-  BookOpen,
+  History,
   Clock,
-  TrendingUp
+  TrendingUp,
+  Calendar,
+  Target
 } from "lucide-react";
 
 function formatTime(seconds: number) {
@@ -22,8 +26,13 @@ function formatTime(seconds: number) {
 }
 
 export default function Stopwatch() {
+  const [searchParams] = useSearchParams()
   const { data: goals } = useGoals()
-  const [selectedGoalId, setSelectedGoalId] = useState('')
+  const { data: timeSlots } = useGlobalTimeSlots()
+  
+  const [selectedSlotId, setSelectedSlotId] = useState(searchParams.get('slotId') || '')
+  const [selectedGoalId, setSelectedGoalId] = useState(searchParams.get('goalId') || '')
+  
   const [running, setRunning] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [note, setNote] = useState('')
@@ -34,6 +43,29 @@ export default function Stopwatch() {
   const startedAtRef = useRef<Date | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const saveSession = useSaveSession()
+
+  // Sync state with search params
+  useEffect(() => {
+    const slotId = searchParams.get('slotId')
+    if (slotId) setSelectedSlotId(slotId)
+    
+    const goalId = searchParams.get('goalId')
+    if (goalId) setSelectedGoalId(goalId)
+  }, [searchParams])
+
+  // Find the selected slot
+  const selectedSlot = useMemo(() => 
+    timeSlots?.find(ts => ts.id === selectedSlotId),
+    [timeSlots, selectedSlotId]
+  )
+
+  // Update goal and note when slot changes
+  useEffect(() => {
+    if (selectedSlot) {
+      setSelectedGoalId(selectedSlot.goal)
+      setNote(selectedSlot.note || '')
+    }
+  }, [selectedSlot])
 
   useEffect(() => {
     if (running) {
@@ -59,6 +91,8 @@ export default function Stopwatch() {
     setRunning(false)
     setElapsed(0)
     setNote('')
+    setSelectedSlotId('')
+    setSelectedGoalId('')
     startedAtRef.current = null
   }
 
@@ -68,14 +102,19 @@ export default function Stopwatch() {
 
     if (manualMode) {
       finalDuration = (Number(manualHours) * 3600) + (Number(manualMinutes) * 60)
-      // For manual mode, we just say it started now (or user could pick a date, but keep it simple)
       startTime = new Date().toISOString()
     }
 
     if (!selectedGoalId || finalDuration === 0) return
 
     saveSession.mutate(
-      { goal: selectedGoalId, started_at: startTime, duration_seconds: finalDuration, note },
+      { 
+        goal: selectedGoalId, 
+        timeslot: selectedSlotId || null,
+        started_at: startTime, 
+        duration_seconds: finalDuration, 
+        note 
+      },
       {
         onSuccess: () => {
           handleReset()
@@ -137,17 +176,22 @@ export default function Stopwatch() {
             {/* Controls */}
             <div className="flex-1 w-full space-y-6">
               <div>
-                <p className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-3 ml-1">Lernziel auswählen</p>
+                <p className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-3 ml-1">Geplante Session auswählen</p>
                 <div className="relative">
                   <select
-                    value={selectedGoalId}
-                    onChange={(e) => setSelectedGoalId(e.target.value)}
+                    value={selectedSlotId}
+                    onChange={(e) => setSelectedSlotId(e.target.value)}
                     disabled={running}
                     className="w-full border border-slate-200 dark:border-border rounded-2xl px-5 py-4 text-slate-800 dark:text-foreground outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-900/10 appearance-none bg-slate-50/50 dark:bg-muted/50 transition-all text-base disabled:opacity-50 font-medium"
                   >
-                    <option value="">Was lernst du gerade?</option>
-                    {goals?.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
+                    <option value="">Was hast du heute geplant?</option>
+                    {timeSlots?.map((ts) => (
+                      <option key={ts.id} value={ts.id}>
+                        {ts.goal_title}: {ts.note || 'Lernsession'} ({ts.planned_minutes}m)
+                      </option>
+                    ))}
                   </select>
+
                   <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 </div>
               </div>
@@ -186,15 +230,19 @@ export default function Stopwatch() {
           /* Manual Mode */
           <div className="space-y-8">
             <div>
-              <p className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-3 ml-1">Lernziel auswählen</p>
+              <p className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-3 ml-1">Geplante Session auswählen</p>
               <div className="relative">
                 <select
-                  value={selectedGoalId}
-                  onChange={(e) => setSelectedGoalId(e.target.value)}
+                  value={selectedSlotId}
+                  onChange={(e) => setSelectedSlotId(e.target.value)}
                   className="w-full border border-slate-200 dark:border-border rounded-2xl px-5 py-4 text-slate-800 dark:text-foreground outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-900/10 appearance-none bg-slate-50/50 dark:bg-muted/50 transition-all text-base font-medium"
                 >
-                  <option value="">Lernziel auswählen...</option>
-                  {goals?.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
+                  <option value="">Was hast du heute geplant?</option>
+                  {timeSlots?.map((ts) => (
+                    <option key={ts.id} value={ts.id}>
+                      {ts.note || 'Lernsession'} ({ts.planned_minutes}m)
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>
@@ -254,23 +302,8 @@ export default function Stopwatch() {
         />
       </div>
 
-      {/* 4. Recent Sessions (Moved from Sidebar) */}
-      <div className="bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border shadow-sm overflow-hidden transition-colors">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-50 dark:border-border bg-slate-50/30 dark:bg-muted/20">
-          <div className="flex items-center gap-2">
-            <BookOpen size={16} className="text-indigo-500" />
-            <h3 className="text-slate-700 dark:text-foreground text-sm font-bold uppercase tracking-widest text-[10px]">Letzte Sitzungen</h3>
-          </div>
-          <span className="text-[10px] font-bold text-slate-400">HISTORIE</span>
-        </div>
-        <div className="p-2">
-          <div className="p-10 text-center text-slate-400 text-xs italic">
-            Deine Sitzungshistorie erscheint hier nach dem Speichern.
-          </div>
-        </div>
-      </div>
-
-      {/* 5. Weekly Progress (Moved from Sidebar) */}
+      {/* 4. Weekly Progress (Moved from Sidebar) */}
+	  {/*
       <div className="bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-900/10 dark:to-violet-900/10 border border-indigo-100 dark:border-indigo-900/20 rounded-3xl p-8 transition-colors">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-indigo-700 dark:text-indigo-300 font-bold flex items-center gap-2 text-sm uppercase tracking-widest text-[10px]">
@@ -292,6 +325,7 @@ export default function Stopwatch() {
            </div>
         </div>
       </div>
+	  */}
 
     </div>
   )

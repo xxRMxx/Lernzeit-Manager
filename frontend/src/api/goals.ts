@@ -32,10 +32,14 @@ export interface Session {
   id: string
   user: User
   goal: string
+  timeslot?: string | null
   goal_title: string
   started_at: string
   duration_seconds: number
   note: string
+  status: 'OPEN' | 'COMPLETED'
+  created_at: string
+  updated_at: string
 }
 
 export interface TimeSlot {
@@ -45,6 +49,9 @@ export interface TimeSlot {
   date: string
   planned_minutes: number
   note: string
+  status: 'OPEN' | 'COMPLETED'
+  created_at: string
+  updated_at: string
 }
 
 export interface Milestone {
@@ -69,6 +76,7 @@ export interface Goal {
   open_milestones: number
   own_hours: number
   created_at: string
+  updated_at: string
   memberships: Membership[]
   plans: Plan[]
   rough_plans: RoughPlan[]
@@ -138,7 +146,7 @@ export function useGoalStats(id: string) {
 export function useAddMember(goalId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: { user_id: number; role: string }) =>
+    mutationFn: (data: { user_id?: number; email?: string; role: string }) =>
       client.post(`/goals/${goalId}/members/`, data).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['goals', goalId] }),
   })
@@ -182,7 +190,7 @@ export function useCreatePlan(goalId: string) {
 export function useCreateSession(goalId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: { started_at: string; duration_seconds: number; note?: string }) =>
+    mutationFn: (data: { started_at: string; duration_seconds: number; note?: string; timeslot?: string | null }) =>
       client.post(`/goals/${goalId}/sessions/`, data).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['goals', goalId] })

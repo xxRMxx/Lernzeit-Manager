@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 
 class Goal(models.Model):
@@ -22,6 +23,7 @@ class Goal(models.Model):
         max_length=15, choices=Visibility.choices, default=Visibility.PRIVATE
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
@@ -57,14 +59,24 @@ class Plan(models.Model):
 
 
 class Session(models.Model):
+    class Status(models.TextChoices):
+        OPEN = 'OPEN', 'Erfasst'
+        COMPLETED = 'COMPLETED', 'Abgeschlossen'
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     goal = models.ForeignKey(Goal, on_delete=models.CASCADE, related_name='sessions')
+    timeslot = models.ForeignKey(
+        'TimeSlot', on_delete=models.SET_NULL, null=True, blank=True, related_name='completed_sessions'
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sessions'
     )
     started_at = models.DateTimeField()
     duration_seconds = models.IntegerField(default=0)
     note = models.TextField(blank=True)
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.OPEN)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f'Session {self.id} ({self.duration_seconds}s)'
@@ -105,11 +117,18 @@ class RoughPlan(models.Model):
 
 
 class TimeSlot(models.Model):
+    class Status(models.TextChoices):
+        OPEN = 'OPEN', 'Offen'
+        COMPLETED = 'COMPLETED', 'Abgeschlossen'
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     goal = models.ForeignKey(Goal, on_delete=models.CASCADE, related_name='time_slots')
     date = models.DateField()
     planned_minutes = models.IntegerField()
     note = models.TextField(blank=True)
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.OPEN)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f'{self.goal.title} am {self.date}: {self.planned_minutes}min'

@@ -1,24 +1,20 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useDashboard } from '../api/dashboard'
-import { useAuthStore } from '../store/auth'
-import { useGoals, useCreateMilestone, useUpdateMilestone } from '../api/goals'
-import type { Milestone } from '../api/goals'
+import { useGoals, useGlobalSessions, useGlobalTimeSlots } from '../api/goals'
+import { format, addDays } from "date-fns"
+import { de } from "date-fns/locale"
 import { 
-  BookOpen, 
+  History, 
   Clock, 
   Plus, 
   Play, 
   TrendingUp, 
   Calendar, 
-  ChevronRight, 
   Target, 
   Flame,
   CheckCircle2,
-  History,
-  Trophy,
-  Star,
-  BarChart2
+  Trophy
 } from "lucide-react";
 import { 
   BarChart, 
@@ -27,18 +23,19 @@ import {
   YAxis, 
   ResponsiveContainer, 
   Cell, 
-  Tooltip, 
-  RadarChart, 
-  Radar, 
-  PolarGrid, 
-  PolarAngleAxis 
+  Tooltip
 } from "recharts";
 
-const CustomTooltip = ({ active, payload }: any) => {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: { color: string; name: string; value: number }[];
+}
+
+const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white dark:bg-card border border-slate-100 dark:border-border rounded-xl shadow-lg px-4 py-3 text-sm transition-colors">
-        {payload.map((p: any, i: number) => (
+        {payload.map((p, i: number) => (
           <div key={i} className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
             <span className="text-slate-500 dark:text-slate-400">{p.name === "soll" ? "Geplant" : "Tatsächlich"}:</span>
@@ -52,18 +49,13 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 export default function Dashboard() {
-  const user = useAuthStore((s) => s.user)
-  const { data: dashboardGoals, isLoading } = useDashboard()
+  const { data: dashboardData, isLoading: isDashboardLoading } = useDashboard()
   const { data: goals } = useGoals()
+  const { data: sessions, isLoading: isSessionsLoading } = useGlobalSessions()
+  const { data: timeSlots, isLoading: isTimeSlotsLoading } = useGlobalTimeSlots()
   const [activeTab, setActiveTab] = useState<'sessions' | 'goals' | 'next'>('goals')
 
-  // States for Milestones logic
-  const [selectedGoalId, setSelectedGoalId] = useState('')
-  const [newTitle, setNewTitle] = useState('')
-  const [newDate, setNewDate] = useState('')
-  const selectedGoal = goals?.find((g) => g.id === selectedGoalId)
-  const createMilestone = useCreateMilestone(selectedGoalId)
-  const updateMilestone = useUpdateMilestone(selectedGoalId)
+  const isLoading = isDashboardLoading || isSessionsLoading || isTimeSlotsLoading
 
   if (isLoading) return (
     <div className="flex justify-center items-center h-64">
@@ -71,9 +63,8 @@ export default function Dashboard() {
     </div>
   )
 
-  const activeGoals = dashboardGoals || []
+  const activeGoals = dashboardData?.goals || []
   const primaryGoal = activeGoals[0]
-  const totalOwnHours = activeGoals.reduce((acc, g) => acc + g.own_hours, 0)
 
   // Chart data - in a real app, this would come from the API
   const weekData = [
@@ -86,37 +77,33 @@ export default function Dashboard() {
     { day: "So", soll: 0, ist: 0 },
   ];
 
-  const radarData = goals?.slice(0, 5).map(g => ({
-    subject: g.title.substring(0, 10) + (g.title.length > 10 ? '..' : ''),
-    A: g.progress_percent
-  })) || [];
-
-  const handleCreateMilestone = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newTitle || !selectedGoalId) return
-    createMilestone.mutate(
-      { title: newTitle, target_date: newDate || undefined },
-      { onSuccess: () => { setNewTitle(''); setNewDate('') } }
-    )
-  }
-
-  const toggleMilestoneStatus = (m: Milestone) => {
-    updateMilestone.mutate({ id: m.id, status: m.status === 'OPEN' ? 'DONE' : 'OPEN' })
-  }
-
   const totalIst = weekData.reduce((a, d) => a + d.ist, 0);
   const totalSoll = 0;
   const weeklyPct = totalSoll > 0 ? Math.round((totalIst / totalSoll) * 100) : 0;
 
+  // Placeholder KPI calculations
+  const todaySessions = sessions?.filter(s => format(new Date(s.started_at), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')) || [];
+  const todaySeconds = todaySessions.reduce((acc, s) => acc + s.duration_seconds, 0);
+  const todayHoursStr = `${Math.floor(todaySeconds / 3600)}h ${Math.floor((todaySeconds % 3600) / 60)}m`;
+  
+  const totalSessionsCount = sessions?.length || 0;
+  const activeGoalsCount = goals?.length || 0;
+  const streakDays = dashboardData?.streak || 0;
+
+  // Future Time Slots
+  const tomorrowStr = format(addDays(new Date(), 1), 'yyyy-MM-dd')
+  const futureTimeSlots = timeSlots?.filter(ts => ts.date >= tomorrowStr && ts.status === 'OPEN').sort((a, b) => a.date.localeCompare(b.date)) || [];
+
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-10">
       
-      {/* Tab Navigation */}
-      <section>
-        <div className="flex p-1 bg-slate-100 dark:bg-muted rounded-2xl mb-6">
+      {/* Combined Tab Section */}
+      <section className="bg-white dark:bg-card rounded-3xl border border-slate-100 dark:border-border shadow-sm overflow-hidden">
+        {/* Tab Navigation */}
+        <div className="flex p-2 bg-slate-50/80 dark:bg-muted/30 border-b border-slate-100 dark:border-border">
           <button
             onClick={() => setActiveTab('sessions')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
               activeTab === 'sessions'
                 ? "bg-white dark:bg-card text-indigo-600 dark:text-indigo-400 shadow-sm"
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -128,7 +115,7 @@ export default function Dashboard() {
           </button>
           <button
             onClick={() => setActiveTab('goals')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
               activeTab === 'goals'
                 ? "bg-white dark:bg-card text-indigo-600 dark:text-indigo-400 shadow-sm"
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -140,7 +127,7 @@ export default function Dashboard() {
           </button>
           <button
             onClick={() => setActiveTab('next')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
               activeTab === 'next'
                 ? "bg-white dark:bg-card text-indigo-600 dark:text-indigo-400 shadow-sm"
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -153,12 +140,11 @@ export default function Dashboard() {
         </div>
 
         {/* Tab Content */}
-        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-          {/* Tab Content Logic from original Dashboard (simplified for brevity) */}
+        <div className="animate-in fade-in duration-300">
           {activeTab === 'goals' && (
-            <div className="space-y-6">
+            <div className="flex flex-col">
               {primaryGoal ? (
-                <div className="bg-white dark:bg-card rounded-3xl border border-slate-100 dark:border-border p-8 shadow-sm relative overflow-hidden group">
+                <div className="p-8 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 dark:bg-indigo-900/10 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110" />
                   <div className="relative z-10">
                     <div className="flex items-center gap-3 mb-4">
@@ -188,7 +174,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-white dark:bg-card rounded-3xl border border-dashed border-slate-200 dark:border-border p-12 text-center">
+                <div className="p-12 text-center">
                   <div className="w-16 h-16 bg-slate-50 dark:bg-muted rounded-full flex items-center justify-center mx-auto mb-4"><Target size={32} className="text-slate-300" /></div>
                   <h3 className="text-slate-700 dark:text-foreground font-bold text-lg">Kein aktives Lernziel</h3>
                   <p className="text-slate-400 text-sm mt-2 max-w-xs mx-auto">Lege dein erstes Ziel an, um deinen Fortschritt zu verfolgen.</p>
@@ -196,11 +182,12 @@ export default function Dashboard() {
                 </div>
               )}
               {activeGoals.length > 1 && (
-                <div className="bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border shadow-sm overflow-hidden">
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-slate-50 dark:border-border">
-                    <div className="flex items-center gap-2"><BookOpen size={17} className="text-indigo-500" /><h2 className="text-slate-700 dark:text-foreground font-semibold text-sm">Weitere Ziele</h2></div>
-                    <Link to="/goals" className="text-xs text-indigo-600 font-bold hover:underline">Alle anzeigen</Link>
+                <div className="border-t border-slate-100 dark:border-border">
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-slate-50 dark:border-border bg-slate-50/30 dark:bg-muted/10">
+                  <div className="flex items-center gap-2"><Target size={17} className="text-indigo-500" /><h2 className="text-slate-700 dark:text-foreground font-semibold text-sm">Weitere Ziele</h2></div>
+                  <Link to="/goals" className="text-xs text-indigo-600 font-bold hover:underline">Alle anzeigen</Link>
                   </div>
+
                   <div className="divide-y divide-slate-50 dark:divide-border">
                     {activeGoals.slice(1).map((goal) => (
                       <Link key={goal.id} to={`/goals/${goal.id}`} className="block px-6 py-4 hover:bg-slate-50/50 dark:hover:bg-accent/50 transition-colors">
@@ -217,93 +204,152 @@ export default function Dashboard() {
             </div>
           )}
           {activeTab === 'sessions' && (
-            <div className="bg-white dark:bg-card rounded-3xl border border-slate-100 dark:border-border shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between px-6 py-5 border-b border-slate-50 dark:border-border">
-                <div className="flex items-center gap-2"><Clock size={18} className="text-indigo-500" /><h2 className="text-slate-700 dark:text-foreground font-bold">Letzte Lernsitzungen</h2></div>
-                <Link to="/stopwatch" className="text-sm text-indigo-600 font-bold hover:underline">Timer öffnen</Link>
+            <div>
+              
+              <div className="divide-y divide-slate-50 dark:divide-border">
+                {!sessions || sessions.length === 0 ? (
+                  <div className="p-12 text-center text-slate-400 italic">
+                    <div className="w-16 h-16 bg-slate-50 dark:bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                      <History size={32} className="text-slate-300" />
+                    </div>
+                    <p>Keine Sitzungen in der letzten Zeit aufgezeichnet.</p>
+                  </div>
+                ) : (
+                  sessions.slice(0, 5).map((session) => (
+                    <div key={session.id} className="px-6 py-4 hover:bg-slate-50/50 dark:hover:bg-accent/50 transition-colors flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                          <Clock size={20} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800 dark:text-foreground">{session.goal_title}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                              {format(new Date(session.started_at), 'dd.MM.yyyy', { locale: de })}
+                            </span>
+                            <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                            <span className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider">
+                              {Math.round(session.duration_seconds / 60)} Min.
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-tight ${session.status === 'COMPLETED' ? "bg-slate-100 text-slate-500 border-slate-200 dark:bg-muted dark:text-slate-400 dark:border-border" : "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30"}`}>
+                        {session.status === 'COMPLETED' ? 'Abgeschlossen' : 'Erfasst'}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
-              <div className="p-12 text-center text-slate-400 italic">
-                <div className="w-16 h-16 bg-slate-50 dark:bg-muted rounded-full flex items-center justify-center mx-auto mb-4"><History size={32} className="text-slate-300" /></div>
-                <p>Keine Sitzungen in der letzten Zeit aufgezeichnet.</p>
-              </div>
+              {sessions && sessions.length > 5 && (
+                <div className="px-6 py-4 bg-slate-50/30 dark:bg-muted/10 text-center border-t border-slate-50 dark:border-border">
+                  <Link to="/planning" className="text-xs text-slate-500 hover:text-indigo-600 font-bold transition-colors">Alle Sitzungen im Planer ansehen</Link>
+                </div>
+              )}
             </div>
           )}
           {activeTab === 'next' && (
-            <div className="bg-white dark:bg-card rounded-3xl border border-slate-100 dark:border-border shadow-sm p-8">
-              <div className="flex items-center gap-2 mb-6"><Calendar size={20} className="text-amber-500" /><h2 className="text-slate-700 dark:text-foreground font-bold text-xl">Nächste Einheit</h2></div>
-              <div className="text-center py-12 border-2 border-dashed border-slate-100 dark:border-border rounded-3xl">
-                <p className="text-slate-400 text-sm italic">Nichts für heute geplant</p>
-                <Link to="/planning" className="mt-4 inline-block text-xs bg-slate-100 dark:bg-muted px-4 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-600 transition-all font-bold uppercase tracking-widest">Lernplan öffnen</Link>
+            <div>
+              
+              <div className="divide-y divide-slate-50 dark:divide-border max-h-[400px] overflow-y-auto">
+                {!futureTimeSlots || futureTimeSlots.length === 0 ? (
+                  <div className="p-12 text-center text-slate-400 italic">
+                    <div className="w-16 h-16 bg-slate-50 dark:bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Calendar size={32} className="text-slate-300" />
+                    </div>
+                    <p>Keine zukünftigen Einheiten ab morgen geplant.</p>
+                  </div>
+                ) : (
+                  futureTimeSlots.map((ts) => (
+                    <div key={ts.id} className="px-6 py-4 hover:bg-slate-50/50 dark:hover:bg-accent/50 transition-colors flex items-center justify-between group">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400">
+                          <Calendar size={20} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800 dark:text-foreground">{ts.goal_title}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                              {format(new Date(ts.date), 'dd.MM.yyyy', { locale: de })}
+                            </span>
+                            <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                            <span className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider">
+                              {ts.planned_minutes} Min. geplant
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <Link to={`/stopwatch?slotId=${ts.id}`} className="opacity-0 group-hover:opacity-100 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-bold transition-all shadow-sm">
+                        Starten
+                      </Link>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
         </div>
       </section>
 
-      {/* Statistics Section */}
+      {/* Simplified Statistics Section */}
       <section className="space-y-6 pt-4 border-t border-slate-100 dark:border-border pt-10">
         <h2 className="text-slate-400 text-[10px] uppercase font-bold tracking-widest ml-1">Deine Statistik</h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg shadow-indigo-100 dark:shadow-none">
-            <div className="flex items-center justify-between mb-5">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><Clock size={20} className="text-white" /></div>
-              <span className="text-indigo-100 text-xs font-bold bg-white/10 px-3 py-1 rounded-full">Diese Woche</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {/* Heute gelernt */}
+          <div className="bg-white dark:bg-card rounded-2xl p-5 border border-slate-100 dark:border-border shadow-sm flex items-center gap-5">
+            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center flex-shrink-0"><TrendingUp size={24} className="text-emerald-600 dark:text-emerald-400" /></div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Heute gelernt</p>
+              <p className="text-xl font-bold text-slate-800 dark:text-foreground">{todayHoursStr}</p>
             </div>
-            <p className="text-4xl font-bold">0h</p>
-            <p className="text-indigo-100 text-sm mt-1">von --h Wochenziel</p>
-            <div className="mt-5 h-2 bg-white/20 rounded-full overflow-hidden"><div className="h-full bg-white rounded-full" style={{ width: "0%" }} /></div>
           </div>
-          <div className="grid grid-cols-1 gap-4">
-            <div className="bg-white dark:bg-card rounded-2xl p-5 border border-slate-100 dark:border-border shadow-sm flex items-center gap-5">
-              <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center flex-shrink-0"><TrendingUp size={24} className="text-emerald-600 dark:text-emerald-400" /></div>
-              <div><p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Heute gelernt</p><p className="text-xl font-bold text-slate-800 dark:text-foreground">0h 00m</p></div>
+
+          {/* Aktueller Streak */}
+          <div className="bg-white dark:bg-card rounded-2xl p-5 border border-slate-100 dark:border-border shadow-sm flex items-center gap-5">
+            <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center flex-shrink-0"><Flame size={24} className="text-amber-500" /></div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Aktueller Streak</p>
+              <p className="text-xl font-bold text-slate-800 dark:text-foreground">{streakDays} Tage 🔥</p>
             </div>
-            <div className="bg-white dark:bg-card rounded-2xl p-5 border border-slate-100 dark:border-border shadow-sm flex items-center gap-5">
-              <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center flex-shrink-0"><Flame size={24} className="text-amber-500" /></div>
-              <div><p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Aktueller Streak</p><p className="text-xl font-bold text-slate-800 dark:text-foreground">0 Tage 🔥</p></div>
+          </div>
+
+          {/* Wochenziel erreicht */}
+          <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-5 text-white shadow-lg shadow-indigo-100 dark:shadow-none flex items-center gap-5 lg:col-span-1">
+            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0"><Trophy size={24} className="text-white" /></div>
+            <div className="flex-1">
+              <div className="flex justify-between items-center mb-1">
+                <p className="text-xs font-bold text-indigo-100 uppercase tracking-widest">Wochenziel</p>
+                <span className="font-bold text-sm">{weeklyPct}%</span>
+              </div>
+              <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+                <div className="h-full bg-white rounded-full transition-all" style={{ width: `${weeklyPct}%` }} />
+              </div>
             </div>
-            <div className="bg-white dark:bg-card rounded-2xl p-5 border border-slate-100 dark:border-border shadow-sm flex items-center gap-5">
-              <div className="w-12 h-12 bg-violet-50 dark:bg-violet-900/20 rounded-xl flex items-center justify-center flex-shrink-0"><Target size={24} className="text-violet-600 dark:text-violet-400" /></div>
-              <div><p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Gesamtzeit</p><p className="text-xl font-bold text-slate-800 dark:text-foreground">{totalOwnHours.toFixed(1)} Stunden</p></div>
+          </div>
+
+          {/* Lernsitzungen insgesamt */}
+          <div className="bg-white dark:bg-card rounded-2xl p-5 border border-slate-100 dark:border-border shadow-sm flex items-center gap-5">
+            <div className="w-12 h-12 bg-violet-50 dark:bg-violet-900/20 rounded-2xl flex items-center justify-center flex-shrink-0"><CheckCircle2 size={24} className="text-violet-600 dark:text-violet-400" /></div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Lernsitzungen</p>
+              <p className="text-xl font-bold text-slate-800 dark:text-foreground">{totalSessionsCount} <span className="text-sm text-slate-400 font-normal">insgesamt</span></p>
+            </div>
+          </div>
+
+          {/* Aktive Lernziele */}
+          <div className="bg-white dark:bg-card rounded-2xl p-5 border border-slate-100 dark:border-border shadow-sm flex items-center gap-5">
+            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center flex-shrink-0"><Target size={24} className="text-blue-600 dark:text-blue-400" /></div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Lernziele</p>
+              <p className="text-xl font-bold text-slate-800 dark:text-foreground">{activeGoalsCount} <span className="text-sm text-slate-400 font-normal">aktiv</span></p>
             </div>
           </div>
         </div>
-      </section>
 
-      {/* --- MOVED FROM MILESTONES PAGE --- */}
-      <section className="space-y-10 pt-10 border-t border-slate-100 dark:border-border">
-        {/* KPI row from Milestones */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg shadow-emerald-100">
-            <div className="flex items-center justify-between mb-3"><Trophy size={20} className="text-white/80" /><span className="text-white/70 text-xs">Woche</span></div>
-            <p className="text-3xl font-bold">{weeklyPct}%</p>
-            <p className="text-white/80 text-sm mt-1">Wochenziel erreicht</p>
-            <div className="mt-3 h-1.5 bg-white/20 rounded-full"><div className="h-full bg-white rounded-full transition-all" style={{ width: `${weeklyPct}%` }} /></div>
-          </div>
-          <div className="bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border shadow-sm p-5">
-            <div className="w-9 h-9 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center mb-3"><Clock size={18} className="text-indigo-500" /></div>
-            <p className="text-3xl text-slate-800 dark:text-foreground font-bold">{goals?.reduce((acc, g) => acc + g.own_hours, 0).toFixed(0)}h</p>
-            <p className="text-slate-500 text-sm mt-1">Gesamtstunden</p>
-            <p className="text-slate-400 text-xs mt-0.5">seit Semesterbeginn</p>
-          </div>
-          <div className="bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border shadow-sm p-5">
-            <div className="w-9 h-9 bg-violet-50 dark:bg-violet-900/20 rounded-xl flex items-center justify-center mb-3"><CheckCircle2 size={18} className="text-violet-500" /></div>
-            <p className="text-3xl text-slate-800 dark:text-foreground font-bold">0</p>
-            <p className="text-slate-500 text-sm mt-1">Lern-Sitzungen</p>
-            <p className="text-slate-400 text-xs mt-0.5">insgesamt</p>
-          </div>
-          <div className="bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border shadow-sm p-5">
-            <div className="w-9 h-9 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center mb-3"><TrendingUp size={18} className="text-amber-500" /></div>
-            <p className="text-3xl text-slate-800 dark:text-foreground font-bold">{goals?.length || 0}</p>
-            <p className="text-slate-500 text-sm mt-1">Aktive Lernziele</p>
-            <p className="text-slate-400 text-xs mt-0.5">fortlaufend</p>
-          </div>
-        </div>
-
-        {/* Charts row from Milestones */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border shadow-sm p-6 transition-colors">
+        {/* Soll-Ist-Vergleich Chart */}
+        <div className="mt-8">
+          <div className="bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border shadow-sm p-6 transition-colors">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-5 gap-3">
               <div><h2 className="text-slate-700 dark:text-foreground font-bold">Soll–Ist-Vergleich</h2><p className="text-slate-400 text-sm">Diese Woche</p></div>
               <div className="flex flex-wrap gap-3">
@@ -314,7 +360,7 @@ export default function Dashboard() {
             </div>
             {totalIst === 0 && totalSoll === 0 ? (
               <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-100 dark:border-border rounded-xl">
-                 <BarChart2 size={32} className="text-slate-200 mb-2" /><p className="text-slate-400 text-sm italic">Keine Daten für diese Woche verfügbar</p>
+                 <TrendingUp size={32} className="text-slate-200 mb-2" /><p className="text-slate-400 text-sm italic">Keine Daten für diese Woche verfügbar</p>
               </div>
             ) : (
               <div className="h-64">
@@ -334,59 +380,6 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-          <div className="bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border shadow-sm p-6 transition-colors">
-            <h2 className="text-slate-700 dark:text-foreground font-bold mb-1">Fortschritt</h2>
-            <p className="text-slate-400 text-sm mb-4">Fortschritt je Fach (%)</p>
-            {radarData.length === 0 ? (
-              <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-100 dark:border-border rounded-xl">
-                <Target size={32} className="text-slate-200 mb-2" /><p className="text-slate-400 text-sm italic">Keine Lernziele vorhanden</p>
-              </div>
-            ) : (
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={radarData}>
-                    <PolarGrid stroke="#E2E8F0" className="dark:stroke-slate-700" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: "#94A3B8" }} />
-                    <Radar name="Fortschritt" dataKey="A" stroke="#4F6EF7" fill="#4F6EF7" fillOpacity={0.15} strokeWidth={2} />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Milestones Management from Milestones */}
-        <div className="bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border shadow-sm overflow-hidden transition-colors">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-50 dark:border-border">
-            <div className="flex items-center gap-2"><BarChart2 size={17} className="text-indigo-500" /><h2 className="text-slate-700 dark:text-foreground font-bold">Meilensteine verwalten</h2></div>
-            <select value={selectedGoalId} onChange={(e) => setSelectedGoalId(e.target.value)} className="border border-slate-200 dark:border-border rounded-xl px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 outline-none focus:border-indigo-400 bg-slate-50 dark:bg-muted/50 transition-all">
-              <option value="">Lernziel auswählen...</option>
-              {goals?.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
-            </select>
-          </div>
-          {selectedGoal ? (
-            <div className="p-6 space-y-6">
-              <form onSubmit={handleCreateMilestone} className="flex flex-col sm:flex-row gap-3">
-                <input placeholder="Neuer Meilenstein (z.B. Kapitel 1 fertig)..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="flex-1 border border-slate-200 dark:border-border rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-foreground outline-none focus:border-indigo-400 bg-slate-50/50 dark:bg-muted/50 transition-all" />
-                <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="border border-slate-200 dark:border-border rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-foreground outline-none focus:border-indigo-400 bg-slate-50/50 dark:bg-muted/50 transition-all" />
-                <button type="submit" disabled={createMilestone.isPending || !newTitle} className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all disabled:opacity-50 shadow-md">Hinzufügen</button>
-              </form>
-              <div className="divide-y divide-slate-50 dark:divide-border border border-slate-50 dark:border-border rounded-2xl overflow-hidden">
-                {selectedGoal.milestones.length === 0 ? (
-                  <div className="p-12 text-center"><p className="text-slate-400 text-sm italic">Noch keine Meilensteine für dieses Ziel</p></div>
-                ) : (
-                  selectedGoal.milestones.map((m) => (
-                    <div key={m.id} className="flex items-center gap-4 p-4 hover:bg-slate-50/50 dark:hover:bg-accent/50 transition-colors">
-                      <button onClick={() => toggleMilestoneStatus(m)} className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${m.status === 'DONE' ? 'bg-emerald-500 text-white' : 'border-2 border-slate-200 dark:border-border text-transparent'}`}><CheckCircle2 size={16} /></button>
-                      <div className="flex-1 min-w-0"><p className={`text-sm font-semibold transition-all ${m.status === 'DONE' ? 'line-through text-slate-400' : 'text-slate-700 dark:text-foreground'}`}>{m.title}</p>{m.target_date && (<div className="flex items-center gap-1 text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-wider"><Clock size={10} /> bis {new Date(m.target_date).toLocaleDateString('de-DE')}</div>)}</div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="p-20 text-center"><div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center mx-auto mb-4"><Star size={32} className="text-indigo-400" /></div><p className="text-slate-500 font-medium">Wähle ein Lernziel aus, um Meilensteine zu verwalten</p></div>
-          )}
         </div>
       </section>
 
