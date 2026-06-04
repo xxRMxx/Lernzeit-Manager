@@ -113,10 +113,25 @@ export default function GoalForm({ initial, onSubmit, onCancel, isPending }: Pro
           />
         </div>
         <div>
-          <label htmlFor="end_date" className="text-slate-600 dark:text-slate-400 text-sm block mb-2 font-medium">
-            <Calendar size={14} className="inline mr-1.5 text-slate-400" />
-            Enddatum / Prüfung
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label htmlFor="end_date" className="text-slate-600 dark:text-slate-400 text-sm block font-medium">
+              <Calendar size={14} className="inline mr-1.5 text-slate-400" />
+              Enddatum / Prüfung
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                if (startDate) {
+                  const d = new Date(startDate);
+                  d.setMonth(d.getMonth() + 6);
+                  setEndDate(d.toISOString().split('T')[0]);
+                }
+              }}
+              className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 hover:text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-lg border border-indigo-100 dark:border-indigo-900/30 transition-all"
+            >
+              + 6 Monate
+            </button>
+          </div>
           <input
             id="end_date"
             type="date"

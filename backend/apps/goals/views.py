@@ -22,6 +22,17 @@ def get_accessible_goals(user):
         Q(visibility__in=['SHARED', 'COLLABORATIVE'])
     ).distinct()
 
+def get_annotated_goals(user):
+    own_seconds_sq = Session.objects.filter(
+        goal=OuterRef('pk'),
+        user=user
+    ).values('goal').annotate(
+        total=Sum('duration_seconds')
+    ).values('total')
+    
+    return get_accessible_goals(user).annotate(
+        own_seconds=Coalesce(Subquery(own_seconds_sq, output_field=IntegerField()), 0)
+    )
 
 class GoalListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -30,7 +41,7 @@ class GoalListCreateView(generics.ListCreateAPIView):
         return GoalListSerializer if self.request.method == 'GET' else GoalSerializer
 
     def get_queryset(self):
-        return get_accessible_goals(self.request.user)
+        return get_annotated_goals(self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
@@ -41,7 +52,7 @@ class GoalDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, CanAccessGoal]
 
     def get_queryset(self):
-        return get_accessible_goals(self.request.user)
+        return get_annotated_goals(self.request.user)
 
     def destroy(self, request, *args, **kwargs):
         goal = self.get_object()
@@ -93,6 +104,14 @@ class SessionListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(goal=self.get_goal(), user=self.request.user)
+
+
+class SessionDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = SessionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Session.objects.filter(user=self.request.user)
 
 
 class MilestoneListCreateView(generics.ListCreateAPIView):
@@ -200,6 +219,9 @@ def goal_stats(request, goal_id):
     })
 
 
+from django.utils import timezone
+from src.logic.statistics import streak_days
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def dashboard(request):
@@ -222,10 +244,10 @@ def dashboard(request):
         open_milestones_count=Coalesce(Subquery(open_milestones_sq, output_field=IntegerField()), 0)
     )
 
-    result = []
+    result_goals = []
     for goal in goals:
         own_seconds = goal.own_seconds
-        result.append({
+        result_goals.append({
             'id': str(goal.id),
             'title': goal.title,
             'visibility': goal.visibility,
@@ -234,4 +256,13 @@ def dashboard(request):
             'progress_percent': round((own_seconds / 3600) / goal.target_hours * 100, 1) if goal.target_hours else 0,
             'open_milestones': goal.open_milestones_count,
         })
-    return Response(result)
+        
+    # Calculate streak
+    user_sessions = Session.objects.filter(user=request.user).order_by('-started_at')
+    # Use the logic function for streak
+    streak = streak_days(tuple(user_sessions), timezone.localdate())
+
+    return Response({
+        'goals': result_goals,
+        'streak': streak
+    })

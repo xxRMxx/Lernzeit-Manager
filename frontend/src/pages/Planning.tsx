@@ -1,44 +1,63 @@
-import { useState, useRef, useEffect } from 'react'
-import { useGoals, useCreatePlan, useCreateTimeSlot, useUpdateTimeSlot, useDeleteTimeSlot, useGlobalSessions, useGlobalTimeSlots, useCreateSession } from '../api/goals'
+import React, { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useGoals, useCreateTimeSlot, useUpdateTimeSlot, useDeleteTimeSlot, useGlobalSessions, useGlobalTimeSlots, useCreateSession } from '../api/goals'
+import client from '../api/client'
 import type { TimeSlot, Session } from '../api/goals'
+import { format } from "date-fns"
+import { de } from "date-fns/locale"
 import { 
-  CalendarDays, 
-  ChevronRight, 
+  Calendar, 
   Target, 
   Clock, 
-  TrendingUp,
-  Save,
-  RotateCcw,
-  Plus,
-  History,
+  Plus, 
   X,
   Play,
-  MoreVertical,
   Edit2,
   Trash2,
   CheckCircle2,
-  Minus
+  Minus,
+  TrendingUp,
+  History,
+  ChevronUp,
+  ChevronDown,
+  Circle,
+  AlertCircle
 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
+import { Badge } from "../components/ui/badge";
+import { cn } from "../components/ui/utils";
 
-const initialDays = [
-  { short: "Mo", full: "Montag", date: "21. Mai", color: "#4F6EF7" },
-  { short: "Di", full: "Dienstag", date: "22. Mai", color: "#CBD5E1" },
-  { short: "Mi", full: "Mittwoch", date: "23. Mai", color: "#7C3AED" },
-  { short: "Do", full: "Donnerstag", date: "24. Mai", color: "#F59E0B" },
-  { short: "Fr", full: "Freitag", date: "25. Mai", color: "#CBD5E1" },
-  { short: "Sa", full: "Samstag", date: "26. Mai", color: "#10B981" },
-  { short: "So", full: "Sonntag", date: "27. Mai", color: "#10B981" },
-];
+interface UnifiedEntry {
+  id: string;
+  type: 'TIMESLOT' | 'UNPLANNED';
+  status: 'PLANNED' | 'TRACKED' | 'COMPLETED';
+  title: string;
+  goal_id: string;
+  goal_title: string;
+  date: string;
+  planned_minutes: number;
+  tracked_minutes: number;
+  created_at: string;
+  updated_at: string;
+  original_data: TimeSlot | Session;
+}
+
+type SortKey = 'title' | 'date' | 'updated_at';
+type SortOrder = 'asc' | 'desc';
 
 export default function Planning() {
+  const navigate = useNavigate()
   const { data: goals } = useGoals()
   const { data: sessions } = useGlobalSessions()
   const { data: timeSlots } = useGlobalTimeSlots()
   
-  const [selectedGoalId, setSelectedGoalId] = useState('')
-  const [dayHours, setDayHours] = useState<number[]>(new Array(7).fill(0))
-  
-  // States for the Session Modal (Planning/Editing)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingSlot, setEditingSlot] = useState<TimeSlot | null>(null)
   const [newSessionGoalId, setNewSessionGoalId] = useState('')
@@ -46,39 +65,108 @@ export default function Planning() {
   const [sessionMinutes, setSessionMinutes] = useState('60')
   const [sessionNote, setSessionNote] = useState('')
 
-  // States for the "Zeit nachtragen" Modal
   const [isLogModalOpen, setIsLogModalOpen] = useState(false)
   const [logGoalId, setLogGoalId] = useState('')
+  const [logSlotId, setLogSlotId] = useState<string | null>(null)
   const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0])
   const [logMinutes, setLogMinutes] = useState(60)
   const [logNote, setLogNote] = useState('')
 
-  // State for Action Menu
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey, order: SortOrder }>({ 
+    key: 'date', 
+    order: 'desc' 
+  })
 
-  const selectedGoal = goals?.find((g) => g.id === selectedGoalId)
-  const createPlan = useCreatePlan(selectedGoalId)
   const createTimeSlot = useCreateTimeSlot(newSessionGoalId)
   const updateTimeSlot = useUpdateTimeSlot(newSessionGoalId)
-  const deleteTimeSlot = useDeleteTimeSlot(newSessionGoalId)
+  const deleteTimeSlot = useDeleteTimeSlot(editingSlot?.goal || '')
   const createSession = useCreateSession(logGoalId)
 
-  const totalPlannedHours = dayHours.reduce((a, b) => a + b, 0);
-  const weeklyGoal = 15;
-  const pct = Math.min(Math.round((totalPlannedHours / weeklyGoal) * 100), 100);
-  const maxH = Math.max(...dayHours, 1);
+  const handleSort = (key: SortKey) => {
+    setSortConfig(prev => ({
+      key,
+      order: prev.key === key && prev.order === 'asc' ? 'desc' : 'asc'
+    }))
+  }
 
-  // Close menu when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenuId(null)
+  const groupedEntries = useMemo(() => {
+    // 1. Convert TimeSlots to entries and track accumulated time
+    const entries: UnifiedEntry[] = (timeSlots || []).map(ts => {
+      const relatedSessions = (sessions || []).filter(s => s.timeslot === ts.id);
+      const tracked_minutes = relatedSessions.reduce((acc, s) => acc + Math.round(s.duration_seconds / 60), 0);
+      
+      let status: UnifiedEntry['status'] = 'PLANNED';
+      if (ts.status === 'COMPLETED') status = 'COMPLETED';
+      else if (tracked_minutes > 0) status = 'TRACKED';
+
+      return {
+        id: ts.id,
+        type: 'TIMESLOT',
+        status,
+        title: ts.note || 'Lernsession',
+        goal_id: ts.goal,
+        goal_title: ts.goal_title,
+        date: ts.date,
+        planned_minutes: ts.planned_minutes,
+        tracked_minutes,
+        created_at: ts.created_at,
+        updated_at: ts.updated_at,
+        original_data: ts
+      };
+    });
+
+    // 2. Find orphaned sessions (unplanned)
+    (sessions || []).forEach(s => {
+      if (!s.timeslot) {
+        entries.push({
+          id: s.id,
+          type: 'UNPLANNED',
+          status: 'TRACKED', // Unplanned is always tracked
+          title: s.note || 'Ungeplante Session',
+          goal_id: s.goal,
+          goal_title: s.goal_title,
+          date: s.started_at,
+          planned_minutes: 0,
+          tracked_minutes: Math.round(s.duration_seconds / 60),
+          created_at: s.created_at,
+          updated_at: s.updated_at,
+          original_data: s
+        });
       }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
+    });
+
+    // 3. Grouping
+    const groups: { title: string, id: string, items: UnifiedEntry[], total_planned_minutes: number, total_tracked_minutes: number }[] = [];
+    const goalSorted = [...entries].sort((a, b) => a.goal_title.localeCompare(b.goal_title));
+
+    goalSorted.forEach(item => {
+      let group = groups.find(g => g.id === item.goal_id);
+      if (!group) {
+        group = { title: item.goal_title, id: item.goal_id, items: [], total_planned_minutes: 0, total_tracked_minutes: 0 };
+        groups.push(group);
+      }
+      group.items.push(item);
+      group.total_planned_minutes += item.planned_minutes;
+      group.total_tracked_minutes += item.tracked_minutes;
+    });
+
+    // 4. Sorting within groups
+    groups.forEach(g => {
+      g.items.sort((a, b) => {
+        // PLANNED/TRACKED first, COMPLETED last
+        const getPrio = (s: UnifiedEntry['status']) => s === 'COMPLETED' ? 1 : 0;
+        if (getPrio(a.status) !== getPrio(b.status)) return getPrio(a.status) - getPrio(b.status);
+        
+        let aVal = a[sortConfig.key];
+        let bVal = b[sortConfig.key];
+        if (aVal < bVal) return sortConfig.order === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.order === 'asc' ? 1 : -1;
+        return 0;
+      });
+    });
+
+    return groups;
+  }, [sessions, timeSlots, sortConfig]);
 
   const handleOpenCreateModal = () => {
     setEditingSlot(null)
@@ -95,23 +183,15 @@ export default function Planning() {
     setSessionDate(slot.date)
     setSessionMinutes(String(slot.planned_minutes))
     setSessionNote(slot.note)
-    setOpenMenuId(null)
     setIsModalOpen(true)
   }
 
-  const handleOpenLogModal = (slot?: TimeSlot) => {
-    if (slot) {
-      setLogGoalId(slot.goal)
-      setLogDate(slot.date)
-      setLogMinutes(slot.planned_minutes)
-      setLogNote(slot.note)
-    } else {
-      setLogGoalId('')
-      setLogDate(new Date().toISOString().split('T')[0])
-      setLogMinutes(60)
-      setLogNote('')
-    }
-    setOpenMenuId(null)
+  const handleOpenLogModal = (goalId?: string, date?: string, minutes?: number, note?: string, slotId?: string) => {
+    setLogGoalId(goalId || '')
+    setLogSlotId(slotId || null)
+    setLogDate(date || new Date().toISOString().split('T')[0])
+    setLogMinutes(minutes || 60)
+    setLogNote(note || '')
     setIsLogModalOpen(true)
   }
 
@@ -120,6 +200,7 @@ export default function Planning() {
     if (!newSessionGoalId || !sessionDate || !sessionMinutes) return
     
     const data = {
+      goal: newSessionGoalId,
       date: sessionDate,
       planned_minutes: Number(sessionMinutes),
       note: sessionNote
@@ -146,49 +227,64 @@ export default function Planning() {
     createSession.mutate({
         started_at: new Date(logDate).toISOString(),
         duration_seconds: logMinutes * 60,
-        note: logNote
+        note: logNote,
+        timeslot: logSlotId
     }, {
         onSuccess: () => {
             setIsLogModalOpen(false)
             setLogNote('')
+            setLogSlotId(null)
         }
     })
   }
 
-  const handleSubmitWeekly = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedGoalId || totalPlannedHours === 0) return
-    createPlan.mutate({ weekly_hours: totalPlannedHours })
-  }
-
-  const handleDeleteSession = (slot: TimeSlot) => {
-    if (confirm('Möchtest du diese Session wirklich löschen?')) {
-        deleteTimeSlot.mutate(slot.id)
-        setOpenMenuId(null)
+  const handleDeleteItem = (item: UnifiedEntry) => {
+    if (confirm('Möchtest du diesen Eintrag wirklich löschen?')) {
+        if (item.type === 'TIMESLOT') {
+            deleteTimeSlot.mutate(item.id);
+        } else {
+            client.delete(`/goals/${item.goal_id}/sessions/${item.id}/`).then(() => {
+                location.reload();
+            });
+        }
     }
   }
 
+  const toggleTimeSlotStatus = (ts: TimeSlot) => {
+    const newStatus = ts.status === 'OPEN' ? 'COMPLETED' : 'OPEN';
+    client.patch(`/goals/${ts.goal}/time-slots/${ts.id}/`, { status: newStatus }).then(() => {
+        location.reload();
+    });
+  }
+
+  const SortIndicator = ({ column }: { column: SortKey }) => {
+    if (sortConfig.key !== column) return null
+    return sortConfig.order === 'asc' ? <ChevronUp size={14} className="ml-1" /> : <ChevronDown size={14} className="ml-1" />
+  }
+
+  const totalPlannedHours = (timeSlots || []).reduce((acc, ts) => acc + ts.planned_minutes, 0) / 60;
+  const weeklyGoal = 15;
+  const pct = Math.min(Math.round((totalPlannedHours / weeklyGoal) * 100), 100);
+
   return (
-    <div className="p-4 md:p-8 space-y-8 max-w-5xl mx-auto">
+    <div className="p-4 md:p-8 space-y-8 max-w-6xl mx-auto">
       
-      {/* 1. Sessions Section */}
+      {/* Sessions Section */}
       <section className="bg-white dark:bg-card rounded-3xl border border-slate-100 dark:border-border shadow-sm overflow-hidden transition-colors">
         <div className="px-6 py-5 border-b border-slate-50 dark:border-border flex items-center justify-between bg-slate-50/50 dark:bg-muted/30">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center text-white shadow-sm">
-              <CalendarDays size={20} />
+              <Calendar size={20} />
             </div>
-            <h2 className="text-slate-800 dark:text-foreground font-bold text-lg">Sessions</h2>
+            <h2 className="text-slate-800 dark:text-foreground font-bold text-lg">Lernzeiten-Planer</h2>
           </div>
-          <div className="flex gap-2">
-            <button 
-              onClick={handleOpenCreateModal}
-              className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md"
-            >
-              <Plus size={16} />
-              Session planen
-            </button>
-          </div>
+          <button 
+            onClick={handleOpenCreateModal}
+            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md"
+          >
+            <Plus size={16} />
+            Session planen
+          </button>
         </div>
 
         <div className="p-6 space-y-6">
@@ -196,7 +292,7 @@ export default function Planning() {
           <div className="space-y-2">
             <div className="flex justify-between items-end">
                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Wochenfortschritt (geplant)</p>
-               <p className="text-xs font-bold text-indigo-600">{totalPlannedHours}h / {weeklyGoal}h</p>
+               <p className="text-xs font-bold text-indigo-600">{totalPlannedHours.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}h / {weeklyGoal}h</p>
             </div>
             <div className="h-3 bg-slate-100 dark:bg-muted rounded-full overflow-hidden shadow-inner relative">
               <div 
@@ -206,106 +302,130 @@ export default function Planning() {
             </div>
           </div>
 
-          <div className="space-y-4">
-            {(!sessions?.length && !timeSlots?.length) ? (
-              <div className="p-12 text-center text-slate-400 italic">
-                <p>Noch keine Sessions vorhanden. Plane jetzt deine erste Session!</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {/* Planned Slots */}
-                {timeSlots?.map((slot) => (
-                  <div key={slot.id} className="flex items-center gap-6 p-4 border border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/20 dark:bg-indigo-900/10 rounded-2xl group hover:border-indigo-200 transition-all relative">
-                    <div className="w-14 h-14 bg-white dark:bg-card rounded-xl flex flex-col items-center justify-center border border-slate-100 dark:border-border shadow-sm flex-shrink-0">
-                      <span className="text-[10px] font-bold text-indigo-500 uppercase leading-none">{new Date(slot.date).toLocaleDateString('de-DE', { weekday: 'short' })}</span>
-                      <span className="text-xl font-bold text-slate-700 dark:text-foreground leading-none mt-1">{new Date(slot.date).getDate()}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-bold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800/50 uppercase tracking-widest">Geplant</span>
-                        <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">• {slot.goal_title}</span>
-                      </div>
-                      <p className="text-sm md:text-base font-bold text-slate-700 dark:text-foreground truncate">{slot.note || 'Lernsession'}</p>
-                      <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-1">
-                        <Clock size={12} /> {slot.planned_minutes} Minuten Dauer
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(openMenuId === slot.id ? null : slot.id);
-                          }}
-                          className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors text-slate-400 hover:text-indigo-600"
-                        >
-                          <MoreVertical size={20} />
-                        </button>
-                        
-                        {openMenuId === slot.id && (
-                          <div ref={menuRef} className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-card border border-slate-100 dark:border-border rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-                             <div className="p-1.5 space-y-0.5">
-                                <button 
-                                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors font-medium"
-                                >
-                                   <Play size={15} className="text-indigo-500" />
-                                   <span>Session starten</span>
-                                </button>
-                                <button 
-                                  onClick={() => handleOpenLogModal(slot)}
-                                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors font-medium"
-                                >
-                                   <Clock size={15} className="text-emerald-500" />
-                                   <span>Zeit nachtragen</span>
-                                </button>
-                                <button 
-                                  onClick={() => handleOpenEditModal(slot)}
-                                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors font-medium"
-                                >
-                                   <Edit2 size={15} className="text-amber-500" />
-                                   <span>Bearbeiten</span>
-                                </button>
-                                <div className="h-px bg-slate-50 dark:bg-border my-1" />
-                                <button 
-                                  onClick={() => handleDeleteSession(slot)}
-                                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors font-medium"
-                                >
-                                   <Trash2 size={15} />
-                                   <span>Löschen</span>
-                                </button>
-                             </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-slate-50/50 dark:bg-muted/20">
+                <TableRow>
+                  <TableHead className="text-[10px] uppercase font-bold tracking-widest text-slate-400 cursor-pointer hover:text-indigo-500 transition-colors" onClick={() => handleSort('title')}>
+                    Bezeichnung <SortIndicator column="title" />
+                  </TableHead>
+                  <TableHead className="text-[10px] uppercase font-bold tracking-widest text-slate-400">
+                    Status
+                  </TableHead>
+                  <TableHead className="text-[10px] uppercase font-bold tracking-widest text-slate-400">
+                    <div className="flex items-center gap-1.5"><Clock size={12} /> Zeit (Ist / Soll)</div>
+                  </TableHead>
+                  <TableHead className="text-[10px] uppercase font-bold tracking-widest text-slate-400 cursor-pointer hover:text-indigo-500 transition-colors" onClick={() => handleSort('date')}>
+                    <div className="flex items-center gap-1.5"><Calendar size={12} /> Datum <SortIndicator column="date" /></div>
+                  </TableHead>
+                  <TableHead className="text-[10px] uppercase font-bold tracking-widest text-slate-400 cursor-pointer hover:text-indigo-500 transition-colors" onClick={() => handleSort('updated_at')}>
+                    <div className="flex items-center gap-1.5"><History size={12} /> Zuletzt geändert <SortIndicator column="updated_at" /></div>
+                  </TableHead>
+                  <TableHead className="text-right pr-6 text-[10px] uppercase font-bold tracking-widest text-slate-400">Aktionen</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {groupedEntries.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-32 text-center text-slate-400 italic">Keine Sessions vorhanden.</TableCell>
+                  </TableRow>
+                ) : (
+                  groupedEntries.map((group, idx) => (
+                    <React.Fragment key={group.id}>
+                      {idx > 0 && (
+                        <TableRow className="h-10 border-none hover:bg-transparent select-none pointer-events-none">
+                          <TableCell colSpan={6} />
+                        </TableRow>
+                      )}
+
+                      <TableRow className="bg-slate-100/40 dark:bg-muted/20 border-y border-slate-200/60 dark:border-border/50 hover:bg-slate-100/40 dark:hover:bg-muted/20">
+                        <TableCell colSpan={6} className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-indigo-500 rounded-xl flex items-center justify-center shadow-sm">
+                              <Target size={16} className="text-white" />
+                            </div>
+                            <span className="text-sm font-bold text-slate-800 dark:text-foreground uppercase tracking-wider">{group.title}</span>
+                            <div className="flex items-center gap-2 ml-auto">
+                              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/40 px-3 py-1 rounded-xl border border-emerald-100 dark:border-emerald-900/50 uppercase tracking-widest shadow-sm">
+                                Ist: {(group.total_tracked_minutes / 60).toLocaleString('de-DE', { maximumFractionDigits: 1 })}h
+                              </span>
+                              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/40 px-3 py-1 rounded-xl border border-indigo-100 dark:border-indigo-900/50 uppercase tracking-widest shadow-sm">
+                                Soll: {(group.total_planned_minutes / 60).toLocaleString('de-DE', { maximumFractionDigits: 1 })}h
+                              </span>
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                
-                {/* Past Sessions */}
-                {sessions?.map((s) => (
-                  <div key={s.id} className="flex items-center gap-6 p-4 border border-slate-50 dark:border-border bg-slate-50/30 dark:bg-muted/20 rounded-2xl grayscale opacity-70 group hover:grayscale-0 hover:opacity-100 transition-all">
-                    <div className="w-14 h-14 bg-white dark:bg-card rounded-xl flex flex-col items-center justify-center border border-slate-100 dark:border-border shadow-sm flex-shrink-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase leading-none">{new Date(s.started_at).toLocaleDateString('de-DE', { weekday: 'short' })}</span>
-                      <span className="text-xl font-bold text-slate-400 dark:text-slate-500 leading-none mt-1">{new Date(s.started_at).getDate()}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-bold bg-slate-100 dark:bg-muted text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full border border-slate-200 dark:border-border uppercase tracking-widest">Abgeschlossen</span>
-                        <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">• {s.goal_title}</span>
-                      </div>
-                      <p className="text-sm md:text-base font-bold text-slate-500 dark:text-slate-400 truncate">{s.note || 'Lern-Sitzung'}</p>
-                      <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-1">
-                        <Clock size={12} /> {(s.duration_seconds / 60).toFixed(0)}m gelernt
-                      </p>
-                    </div>
-                    <div className="hidden sm:block text-right pr-2">
-                       <CheckCircle2 size={20} className="text-emerald-500" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                        </TableCell>
+                      </TableRow>
+                      
+                      {group.items.map((item) => (
+                        <TableRow 
+                          key={`${item.type}-${item.id}`} 
+                          className={cn(
+                            "group transition-colors",
+                            item.status === 'COMPLETED' 
+                              ? "bg-slate-50/20 dark:bg-muted/5 opacity-60 hover:opacity-100 grayscale-[0.8] hover:grayscale-0"
+                              : "hover:bg-slate-50/80 dark:hover:bg-accent/30"
+                          )}
+                        >
+                          <TableCell className={cn(
+                            "font-bold pl-8",
+                            item.status === 'COMPLETED' ? "text-slate-500 dark:text-slate-400" : "text-slate-700 dark:text-foreground"
+                          )}>
+                            <div className="flex items-center gap-2">
+                                {item.type === 'UNPLANNED' && <AlertCircle size={14} className="text-amber-500" title="Ungeplante Session" />}
+                                {item.title}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={cn(
+                              "text-[10px] font-bold uppercase tracking-tight py-0.5",
+                              item.status === 'PLANNED' ? "bg-indigo-50 text-indigo-600 border-indigo-100" :
+                              item.status === 'TRACKED' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                              "bg-slate-100 text-slate-500 border-slate-200"
+                            )}>
+                              {item.status === 'PLANNED' ? 'Geplant' : item.status === 'TRACKED' ? 'Erfasst' : 'Abgeschlossen'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm font-bold text-slate-700 dark:text-foreground">
+                            {item.tracked_minutes}m / {item.planned_minutes}m
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-500">
+                            {format(new Date(item.date), 'dd.MM.yyyy', { locale: de })}
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-400">
+                            {item.updated_at ? format(new Date(item.updated_at), 'dd.MM.yyyy HH:mm', { locale: de }) : '—'}
+                          </TableCell>
+                          <TableCell className="text-right pr-6">
+                            <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {item.type === 'TIMESLOT' && (
+                                <>
+                                  {item.status !== 'COMPLETED' && (
+                                    <button onClick={() => navigate(`/stopwatch?slotId=${item.id}`)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Starten"><Play size={14} fill="currentColor" /></button>
+                                  )}
+                                  <button onClick={() => handleOpenLogModal(item.goal_id, item.date, item.planned_minutes, item.title, item.id)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Zeit nachtragen"><Clock size={14} /></button>
+                                  <button 
+                                    onClick={() => toggleTimeSlotStatus(item.original_data as TimeSlot)} 
+                                    className={cn("p-1.5 rounded-lg transition-colors", item.status !== 'COMPLETED' ? "text-emerald-600 hover:bg-emerald-50" : "text-slate-400 hover:bg-slate-100")}
+                                    title={item.status !== 'COMPLETED' ? "Als abgeschlossen markieren" : "Wieder öffnen"}
+                                  >
+                                    {item.status !== 'COMPLETED' ? <Circle size={14} /> : <CheckCircle2 size={14} />}
+                                  </button>
+                                  <button onClick={() => handleOpenEditModal(item.original_data as TimeSlot)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Bearbeiten"><Edit2 size={14} /></button>
+                                  <button onClick={() => handleDeleteItem(item)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Löschen"><Trash2 size={14} /></button>
+                                </>
+                              )}
+                              {item.type === 'UNPLANNED' && (
+                                 <button onClick={() => handleDeleteItem(item)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Löschen"><Trash2 size={14} /></button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </React.Fragment>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
         </div>
       </section>
@@ -326,7 +446,7 @@ export default function Planning() {
             <form onSubmit={handleSaveSession} className="p-6 space-y-5">
               <div className="space-y-2">
                 <label className="text-slate-400 text-[10px] uppercase font-bold tracking-widest ml-1">Lernziel</label>
-                <select required value={newSessionGoalId} onChange={(e) => setNewSessionGoalId(e.target.value)} disabled={!!editingSlot} className="w-full border border-slate-100 dark:border-border bg-slate-50 dark:bg-muted/50 rounded-xl px-4 py-3 text-sm text-slate-800 dark:text-foreground outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all">
+                <select required value={newSessionGoalId} onChange={(e) => setNewSessionGoalId(e.target.value)} className="w-full border border-slate-100 dark:border-border bg-slate-50 dark:bg-muted/50 rounded-xl px-4 py-3 text-sm text-slate-800 dark:text-foreground outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all">
                   <option value="">Lernziel auswählen...</option>
                   {goals?.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
                 </select>

@@ -16,13 +16,20 @@ def streak_days(sessions: tuple[StudySession, ...], today: date) -> int:
     """
     Pure: Anzahl aufeinanderfolgender Lerntage bis heute.
     Ein Tag zählt wenn mindestens eine Session vorhanden.
+    Der Streak reißt nicht ab, wenn heute noch nicht gelernt wurde,
+    aber gestern gelernt wurde.
     """
     if not sessions:
         return 0
 
     studied_dates = {s.started_at.date() for s in sessions}
-    streak = 0
+    
+    # If not studied today, but studied yesterday, start counting from yesterday
     current = today
+    if current not in studied_dates and (current - timedelta(days=1)) in studied_dates:
+        current -= timedelta(days=1)
+        
+    streak = 0
     while current in studied_dates:
         streak += 1
         current -= timedelta(days=1)
