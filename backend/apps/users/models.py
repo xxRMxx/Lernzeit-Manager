@@ -13,3 +13,18 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
+
+
+class UserPreferences(models.Model):
+    """User preferences for notifications and other settings."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='preferences')
+    learning_reminders_enabled = models.BooleanField(default=True)
+    weekly_report_enabled = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "User Preferences"
+
+    def __str__(self):
+        return f"Preferences for {self.user.email}"

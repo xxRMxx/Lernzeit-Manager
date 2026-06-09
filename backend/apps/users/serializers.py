@@ -1,12 +1,20 @@
 from rest_framework import serializers
 from dj_rest_auth.registration.serializers import RegisterSerializer
-from .models import User
+from .models import User, UserPreferences
+
+
+class UserPreferencesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserPreferences
+        fields = ['learning_reminders_enabled', 'weekly_report_enabled']
 
 
 class UserSerializer(serializers.ModelSerializer):
+    preferences = UserPreferencesSerializer(read_only=True)
+
     class Meta:
         model = User
-        fields = ['id', 'email', 'display_name', 'avatar_url']
+        fields = ['id', 'email', 'display_name', 'avatar_url', 'preferences']
         read_only_fields = ['id', 'email']
 
 
