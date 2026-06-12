@@ -10,7 +10,27 @@ vi.mock('../api/auth', () => ({
   useLogout: () => ({
     mutate: vi.fn(),
     isPending: false,
-  })
+  }),
+  useChangePassword: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+  useChangeEmail: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteAccount: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+  useUserPreferences: () => ({
+    data: { learning_reminders_enabled: true, weekly_report_enabled: false },
+    isLoading: false,
+  }),
+  useUpdateUserPreferences: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
 }))
 
 vi.mock('../context/ThemeContext', () => ({

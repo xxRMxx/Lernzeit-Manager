@@ -9,7 +9,6 @@ import {
   useUpdateUserPreferences,
 } from '../api/auth'
 import { 
-  User, 
   LogOut, 
   Bell, 
   Shield, 
