@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '../store/auth'
-import { useTheme } from '../context/ThemeContext'
 import { 
+  useLogout,
   useChangePassword,
   useChangeEmail,
   useDeleteAccount,
@@ -10,9 +10,7 @@ import {
 } from '../api/auth'
 import { 
   User, 
-  Moon, 
-  Sun, 
-  Monitor, 
+  LogOut, 
   Bell, 
   Shield, 
   ChevronRight,
@@ -26,9 +24,8 @@ import {
 
 export default function Settings() {
   const user = useAuthStore((s) => s.user)
-  const { theme, setTheme } = useTheme()
-  
   // API Hooks
+  const logout = useLogout()
   const changePassword = useChangePassword()
   const changeEmail = useChangeEmail()
   const deleteAccount = useDeleteAccount()
@@ -171,36 +168,8 @@ export default function Settings() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Appearance */}
-        <div className="bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border shadow-sm p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <Sun size={18} className="text-amber-500" />
-            <h3 className="text-slate-700 dark:text-foreground font-bold">Erscheinungsbild</h3>
-          </div>
-          <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-muted/50 p-1.5 rounded-2xl">
-            {(['light', 'dark', 'system'] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTheme(t)}
-                className={`flex flex-col items-center gap-2 py-3 rounded-xl transition-all ${
-                  theme === t
-                    ? 'bg-white dark:bg-card text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-slate-100 dark:ring-border'
-                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
-                }`}
-              >
-                {t === 'light' && <Sun size={18} />}
-                {t === 'dark' && <Moon size={18} />}
-                {t === 'system' && <Monitor size={18} />}
-                <span className="text-[10px] font-bold uppercase tracking-tighter">
-                  {t === 'light' ? 'Hell' : t === 'dark' ? 'Dunkel' : 'System'}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Notifications */}
-        <div className="bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border shadow-sm p-6">
+        <div className="bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border shadow-sm p-6 col-span-1 md:col-span-2">
           <div className="flex items-center gap-2 mb-4">
             <Bell size={18} className="text-indigo-500" />
             <h3 className="text-slate-700 dark:text-foreground font-bold">Benachrichtigungen</h3>
@@ -293,6 +262,14 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      <button
+        onClick={() => logout.mutate()}
+        className="w-full flex items-center justify-center gap-2 bg-white dark:bg-card border border-red-100 dark:border-red-900/20 text-red-500 rounded-2xl py-4 font-bold hover:bg-red-50 dark:hover:bg-red-900/10 transition-all shadow-sm"
+      >
+        <LogOut size={18} />
+        Abmelden
+      </button>
 
       {/* Footer Info */}
       <div className="flex flex-col items-center gap-4 pt-4 pb-8">
