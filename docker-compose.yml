@@ -10,7 +10,7 @@ services:
       - 'ALLOWED_HOSTS=${ALLOWED_HOSTS}'
       - 'CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}'
     volumes:
-      - '${APP_ROOT:-.}/backend:/app'
+      - '/home/raphael/Development/Repositories/Lernzeit-Manager/backend:/app'
       - 'sqlite_data:/app/db_prod'
     command: "bash -c \"pip install --no-cache-dir -r requirements.txt &&\n         python manage.py makemigrations &&\n         python manage.py migrate &&\n         python manage.py runserver 0.0.0.0:8000\"\n"
     labels:
@@ -24,7 +24,7 @@ services:
     environment:
       - 'VITE_API_URL=${VITE_API_URL}'
     volumes:
-      - '${APP_ROOT:-.}/frontend:/app'
+      - '/home/raphael/Development/Repositories/Lernzeit-Manager/frontend:/app'
     command: "sh -c \"npm install &&\n       npm run dev -- --host 0.0.0.0\"\n"
     labels:
       - coolify.managed=true
