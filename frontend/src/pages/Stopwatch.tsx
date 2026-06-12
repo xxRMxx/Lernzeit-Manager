@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useGoals, useGlobalTimeSlots } from '../api/goals'
+import { useGlobalTimeSlots } from '../api/goals'
 import { useSaveSession } from '../api/sessions'
-import { format } from 'date-fns'
+import { useTimerStore } from '../store/timer'
 import { 
   Play, 
   Pause, 
@@ -10,12 +10,7 @@ import {
   ChevronDown, 
   PenLine, 
   Keyboard, 
-  RotateCcw, 
-  History,
-  Clock,
-  TrendingUp,
-  Calendar,
-  Target
+  RotateCcw
 } from "lucide-react";
 
 function formatTime(seconds: number) {
@@ -27,22 +22,32 @@ function formatTime(seconds: number) {
 
 export default function Stopwatch() {
   const [searchParams] = useSearchParams()
-  const { data: goals } = useGoals()
   const { data: timeSlots } = useGlobalTimeSlots()
-  
-  const [selectedSlotId, setSelectedSlotId] = useState(searchParams.get('slotId') || '')
-  const [selectedGoalId, setSelectedGoalId] = useState(searchParams.get('goalId') || '')
-  
-  const [running, setRunning] = useState(false)
-  const [elapsed, setElapsed] = useState(0)
-  const [note, setNote] = useState('')
-  const [manualMode, setManualMode] = useState(false)
-  const [manualHours, setManualHours] = useState("1")
-  const [manualMinutes, setManualMinutes] = useState("30")
-  
-  const startedAtRef = useRef<Date | null>(null)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const saveSession = useSaveSession()
+
+  const {
+    running,
+    elapsed,
+    startedAt,
+    selectedSlotId,
+    selectedGoalId,
+    note,
+    manualMode,
+    manualHours,
+    manualMinutes,
+    setRunning,
+    setElapsed,
+    setStartedAt,
+    setSelectedSlotId,
+    setSelectedGoalId,
+    setNote,
+    setManualMode,
+    setManualHours,
+    setManualMinutes,
+    reset
+  } = useTimerStore()
+
+  const [tickingElapsed, setTickingElapsed] = useState(0)
 
   // Sync state with search params
   useEffect(() => {
@@ -51,7 +56,7 @@ export default function Stopwatch() {
     
     const goalId = searchParams.get('goalId')
     if (goalId) setSelectedGoalId(goalId)
-  }, [searchParams])
+  }, [searchParams, setSelectedSlotId, setSelectedGoalId])
 
   // Find the selected slot
   const selectedSlot = useMemo(() => 
@@ -65,40 +70,52 @@ export default function Stopwatch() {
       setSelectedGoalId(selectedSlot.goal)
       setNote(selectedSlot.note || '')
     }
-  }, [selectedSlot])
+  }, [selectedSlot, setSelectedGoalId, setNote])
 
+  // Manage ticking timer
   useEffect(() => {
-    if (running) {
-      if (!startedAtRef.current) startedAtRef.current = new Date()
-      // If we resumed, we need to adjust startedAtRef to account for previous elapsed time
-      const startTime = Date.now() - (elapsed * 1000)
-      startedAtRef.current = new Date(startTime)
-      
-      intervalRef.current = setInterval(() => {
-        setElapsed(Math.floor((Date.now() - startedAtRef.current!.getTime()) / 1000))
-      }, 1000)
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current)
+    const getElapsedTime = () => {
+      if (running && startedAt) {
+        return elapsed + Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000)
+      }
+      return elapsed
     }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [running])
 
-  const { h, m, sec } = formatTime(elapsed);
+    setTickingElapsed(getElapsedTime())
+
+    if (running) {
+      const interval = setInterval(() => {
+        setTickingElapsed(getElapsedTime())
+      }, 1000)
+      return () => clearInterval(interval)
+    }
+  }, [running, startedAt, elapsed])
+
+  const { h, m, sec } = formatTime(tickingElapsed);
   const circumference = 2 * Math.PI * 54;
-  const dashOffset = circumference - (elapsed % 3600) / 3600 * circumference;
+  const dashOffset = circumference - (tickingElapsed % 3600) / 3600 * circumference;
+
+  const handleStartPause = () => {
+    if (running) {
+      // Pause
+      const current = elapsed + (startedAt ? Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000) : 0)
+      setElapsed(current)
+      setStartedAt(null)
+      setRunning(false)
+    } else {
+      // Start/Resume
+      setStartedAt(new Date().toISOString())
+      setRunning(true)
+    }
+  }
 
   const handleReset = () => {
-    setRunning(false)
-    setElapsed(0)
-    setNote('')
-    setSelectedSlotId('')
-    setSelectedGoalId('')
-    startedAtRef.current = null
+    reset()
   }
 
   const handleSave = () => {
-    let finalDuration = elapsed
-    let startTime = startedAtRef.current?.toISOString() || new Date().toISOString()
+    let finalDuration = tickingElapsed
+    let startTime = startedAt || new Date().toISOString()
 
     if (manualMode) {
       finalDuration = (Number(manualHours) * 3600) + (Number(manualMinutes) * 60)
@@ -122,6 +139,7 @@ export default function Stopwatch() {
       }
     )
   }
+
 
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
@@ -198,7 +216,7 @@ export default function Stopwatch() {
 
               <div className="flex flex-wrap gap-4">
                 <button
-                  onClick={() => setRunning((r) => !r)}
+                  onClick={handleStartPause}
                   disabled={!selectedGoalId}
                   className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-4 rounded-2xl shadow-lg transition-all text-sm font-bold disabled:opacity-40 ${
                     running

@@ -13,8 +13,7 @@ import {
   Calendar, 
   Target, 
   Flame,
-  CheckCircle2,
-  Trophy
+  CheckCircle2
 } from "lucide-react";
 import { 
   BarChart, 
@@ -79,8 +78,6 @@ export default function Dashboard() {
 
   const totalIst = weekData.reduce((a, d) => a + d.ist, 0);
   const totalSoll = 0;
-  const weeklyPct = totalSoll > 0 ? Math.round((totalIst / totalSoll) * 100) : 0;
-
   // Placeholder KPI calculations
   const todaySessions = sessions?.filter(s => format(new Date(s.started_at), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')) || [];
   const todaySeconds = todaySessions.reduce((acc, s) => acc + s.duration_seconds, 0);
@@ -295,7 +292,7 @@ export default function Dashboard() {
       <section className="space-y-6 pt-4 border-t border-slate-100 dark:border-border pt-10">
         <h2 className="text-slate-400 text-[10px] uppercase font-bold tracking-widest ml-1">Deine Statistik</h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {/* Heute gelernt */}
           <div className="bg-white dark:bg-card rounded-2xl p-5 border border-slate-100 dark:border-border shadow-sm flex items-center gap-5">
             <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center flex-shrink-0"><TrendingUp size={24} className="text-emerald-600 dark:text-emerald-400" /></div>
@@ -311,20 +308,6 @@ export default function Dashboard() {
             <div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Aktueller Streak</p>
               <p className="text-xl font-bold text-slate-800 dark:text-foreground">{streakDays} Tage 🔥</p>
-            </div>
-          </div>
-
-          {/* Wochenziel erreicht */}
-          <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-5 text-white shadow-lg shadow-indigo-100 dark:shadow-none flex items-center gap-5 lg:col-span-1">
-            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0"><Trophy size={24} className="text-white" /></div>
-            <div className="flex-1">
-              <div className="flex justify-between items-center mb-1">
-                <p className="text-xs font-bold text-indigo-100 uppercase tracking-widest">Wochenziel</p>
-                <span className="font-bold text-sm">{weeklyPct}%</span>
-              </div>
-              <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
-                <div className="h-full bg-white rounded-full transition-all" style={{ width: `${weeklyPct}%` }} />
-              </div>
             </div>
           </div>
 

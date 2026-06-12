@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Goal } from '../../api/goals'
-import { Clock, Calendar, Flag, Save, X } from 'lucide-react'
+import { Clock, Calendar, Flag, Save } from 'lucide-react'
 
 interface Props {
   initial?: Partial<Goal>
@@ -17,9 +17,15 @@ export default function GoalForm({ initial, onSubmit, onCancel, isPending }: Pro
   const [startDate, setStartDate] = useState(initial?.start_date ?? today)
   const [endDate, setEndDate] = useState(initial?.end_date ?? '')
   const [visibility, setVisibility] = useState<Goal['visibility']>(initial?.visibility ?? 'PRIVATE')
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (startDate && endDate && endDate < startDate) {
+      setError('Das Enddatum darf nicht vor dem Startdatum liegen.')
+      return
+    }
+    setError(null)
     onSubmit({
       title,
       description,
@@ -108,7 +114,10 @@ export default function GoalForm({ initial, onSubmit, onCancel, isPending }: Pro
             id="start_date"
             type="date"
             value={startDate ?? ''}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={(e) => {
+              setStartDate(e.target.value)
+              setError(null)
+            }}
             className="w-full border border-slate-200 dark:border-border rounded-xl px-4 py-3 text-slate-800 dark:text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 dark:focus:ring-indigo-900/20 bg-slate-50/50 dark:bg-muted/50 transition-all text-sm"
           />
         </div>
@@ -125,6 +134,7 @@ export default function GoalForm({ initial, onSubmit, onCancel, isPending }: Pro
                   const d = new Date(startDate);
                   d.setMonth(d.getMonth() + 6);
                   setEndDate(d.toISOString().split('T')[0]);
+                  setError(null)
                 }
               }}
               className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 hover:text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-lg border border-indigo-100 dark:border-indigo-900/30 transition-all"
@@ -136,11 +146,20 @@ export default function GoalForm({ initial, onSubmit, onCancel, isPending }: Pro
             id="end_date"
             type="date"
             value={endDate ?? ''}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={(e) => {
+              setEndDate(e.target.value)
+              setError(null)
+            }}
             className="w-full border border-slate-200 dark:border-border rounded-xl px-4 py-3 text-slate-800 dark:text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 dark:focus:ring-indigo-900/20 bg-slate-50/50 dark:bg-muted/50 transition-all text-sm"
           />
         </div>
       </div>
+
+      {error && (
+        <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm border border-red-100 font-medium">
+          {error}
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center gap-3 pt-4">
