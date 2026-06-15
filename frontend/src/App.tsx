@@ -10,9 +10,11 @@ import GoalDetail from './pages/Goals/GoalDetail'
 import Stopwatch from './pages/Stopwatch'
 import Planning from './pages/Planning'
 import Settings from './pages/Settings'
+import Admin from './pages/Admin'
 
 export default function App() {
   const token = useAuthStore((s) => s.token)
+  const user = useAuthStore((s) => s.user)
 
   return (
     <Routes>
@@ -26,6 +28,7 @@ export default function App() {
           <Route path="/stopwatch" element={<Stopwatch />} />
           <Route path="/planning" element={<Planning />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/admin" element={user?.role === 'ADMIN' ? <Admin /> : <Navigate to="/" />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" />} />

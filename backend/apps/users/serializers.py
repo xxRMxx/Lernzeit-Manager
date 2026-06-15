@@ -14,8 +14,15 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'display_name', 'avatar_url', 'preferences']
-        read_only_fields = ['id', 'email']
+        fields = ['id', 'email', 'display_name', 'avatar_url', 'role', 'preferences']
+        read_only_fields = ['id', 'email', 'role']
+
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'display_name', 'avatar_url', 'is_active', 'role', 'date_joined']
+        read_only_fields = ['id', 'date_joined']
 
 
 class CustomRegisterSerializer(RegisterSerializer):
