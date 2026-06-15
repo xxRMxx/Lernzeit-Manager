@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { NavLink, Link } from 'react-router-dom'
 import { useLogout } from '../api/auth'
-import { 
-  LayoutDashboard, 
-  Target, 
-  Calendar, 
-  Clock, 
-  GraduationCap, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Target,
+  Calendar,
+  Clock,
+  GraduationCap,
+  Settings,
   ChevronRight,
   LogOut,
   ChevronUp
@@ -129,7 +129,7 @@ export default function Sidebar() {
             <p className="text-slate-700 dark:text-foreground text-xs font-bold truncate">
               {user?.display_name || user?.email || 'Gast'}
             </p>
-            <p className="text-slate-400 text-[10px] truncate">Lern-Profil aktiv</p>
+            <p className="text-slate-400 text-[10px] truncate">{user?.role === 'ADMIN' ? 'Administrator' : 'Lern-Profil aktiv'}</p>
           </div>
           <ChevronUp 
             size={14} 

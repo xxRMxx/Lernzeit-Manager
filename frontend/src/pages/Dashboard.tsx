@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useDashboard } from '../api/dashboard'
 import { useGoals, useGlobalSessions, useGlobalTimeSlots } from '../api/goals'
-import { format, addDays } from "date-fns"
+import { format, addDays, startOfWeek, eachDayOfInterval } from "date-fns"
 import { de } from "date-fns/locale"
 import { 
   History, 
@@ -65,19 +65,31 @@ export default function Dashboard() {
   const activeGoals = dashboardData?.goals || []
   const primaryGoal = activeGoals[0]
 
-  // Chart data - in a real app, this would come from the API
-  const weekData = [
-    { day: "Mo", soll: 0, ist: 0 },
-    { day: "Di", soll: 0, ist: 0 },
-    { day: "Mi", soll: 0, ist: 0 },
-    { day: "Do", soll: 0, ist: 0 },
-    { day: "Fr", soll: 0, ist: 0 },
-    { day: "Sa", soll: 0, ist: 0 },
-    { day: "So", soll: 0, ist: 0 },
-  ];
+  const dayLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+  const weekDays = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) })
+
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
+
+  const weekData = weekDays.map((day, i) => {
+    const dateStr = format(day, 'yyyy-MM-dd')
+    const plannedMinutes = timeSlots
+      ?.filter(ts => ts.date === dateStr)
+      .reduce((acc, ts) => acc + ts.planned_minutes, 0) ?? 0
+    const actualSeconds = sessions
+      ?.filter(s => format(new Date(s.started_at), 'yyyy-MM-dd') === dateStr)
+      .reduce((acc, s) => acc + s.duration_seconds, 0) ?? 0
+    return {
+      day: dayLabels[i],
+      soll: Math.round(plannedMinutes / 60 * 10) / 10,
+      ist: Math.round(actualSeconds / 3600 * 10) / 10,
+      isToday: dateStr === todayStr,
+      isPast: dateStr < todayStr,
+    }
+  })
 
   const totalIst = weekData.reduce((a, d) => a + d.ist, 0);
-  const totalSoll = 0;
+  const totalSoll = weekData.reduce((a, d) => a + d.soll, 0);
   // Placeholder KPI calculations
   const todaySessions = sessions?.filter(s => format(new Date(s.started_at), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')) || [];
   const todaySeconds = todaySessions.reduce((acc, s) => acc + s.duration_seconds, 0);
@@ -119,8 +131,8 @@ export default function Dashboard() {
             }`}
           >
             <Target size={16} />
-            <span className="hidden sm:inline">Aktive Lernziele</span>
-            <span className="sm:hidden">Ziele</span>
+            <span className="hidden sm:inline">Aktive Lernziele ({activeGoalsCount})</span>
+            <span className="sm:hidden">Ziele ({activeGoalsCount})</span>
           </button>
           <button
             onClick={() => setActiveTab('next')}
@@ -292,7 +304,7 @@ export default function Dashboard() {
       <section className="space-y-6 pt-4 border-t border-slate-100 dark:border-border pt-10">
         <h2 className="text-slate-400 text-[10px] uppercase font-bold tracking-widest ml-1">Deine Statistik</h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Heute gelernt */}
           <div className="bg-white dark:bg-card rounded-2xl p-5 border border-slate-100 dark:border-border shadow-sm flex items-center gap-5">
             <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center flex-shrink-0"><TrendingUp size={24} className="text-emerald-600 dark:text-emerald-400" /></div>
@@ -320,14 +332,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Aktive Lernziele */}
-          <div className="bg-white dark:bg-card rounded-2xl p-5 border border-slate-100 dark:border-border shadow-sm flex items-center gap-5">
-            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center flex-shrink-0"><Target size={24} className="text-blue-600 dark:text-blue-400" /></div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Lernziele</p>
-              <p className="text-xl font-bold text-slate-800 dark:text-foreground">{activeGoalsCount} <span className="text-sm text-slate-400 font-normal">aktiv</span></p>
-            </div>
-          </div>
         </div>
 
         {/* Soll-Ist-Vergleich Chart */}
@@ -336,7 +340,13 @@ export default function Dashboard() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-5 gap-3">
               <div><h2 className="text-slate-700 dark:text-foreground font-bold">Soll–Ist-Vergleich</h2><p className="text-slate-400 text-sm">Diese Woche</p></div>
               <div className="flex flex-wrap gap-3">
-                {[{ color: "#E0E7FF", label: "Geplant" }, { color: "#4F6EF7", label: "Ist" }, { color: "#10B981", label: "Ziel erreicht" }].map((l) => (
+                {[
+                  { color: "#E0E7FF", label: "Geplant" },
+                  { color: "#4F6EF7", label: "Ist" },
+                  { color: "#10B981", label: "Erreicht" },
+                  { color: "#F59E0B", label: "Noch offen" },
+                  { color: "#EF4444", label: "Verfehlt" },
+                ].map((l) => (
                   <div key={l.label} className="flex items-center gap-1.5 text-xs text-slate-500"><span className="w-3 h-3 rounded-sm inline-block" style={{ backgroundColor: l.color }} />{l.label}</div>
                 ))}
               </div>
@@ -349,14 +359,29 @@ export default function Dashboard() {
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={weekData} barSize={16} barGap={4}>
-                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#94A3B8" }} />
+                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={(props) => {
+                      const entry = weekData[props.index]
+                      let fill = "#94A3B8"
+                      if (entry?.soll > 0) {
+                        if (entry.ist >= entry.soll) fill = "#10B981"
+                        else if (entry.isToday) fill = "#F59E0B"
+                        else if (entry.isPast) fill = "#EF4444"
+                      }
+                      return <text x={props.x} y={props.y + 12} textAnchor="middle" fontSize={12} fontWeight={entry?.soll > 0 ? 700 : 400} fill={fill}>{props.payload.value}</text>
+                    }} />
                     <YAxis hide />
                     <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
                     <Bar dataKey="soll" radius={[4, 4, 0, 0]} fill="#E0E7FF" name="soll" />
                     <Bar dataKey="ist" radius={[4, 4, 0, 0]} name="ist">
-                      {weekData.map((entry, i) => (
-                        <Cell key={i} fill={entry.ist >= entry.soll && entry.soll > 0 ? "#10B981" : "#4F6EF7"} />
-                      ))}
+                      {weekData.map((entry, i) => {
+                        let color = "#4F6EF7"
+                        if (entry.soll > 0) {
+                          if (entry.ist >= entry.soll) color = "#10B981"
+                          else if (entry.isToday) color = "#F59E0B"
+                          else if (entry.isPast) color = "#EF4444"
+                        }
+                        return <Cell key={i} fill={color} />
+                      })}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>

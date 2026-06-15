@@ -1,10 +1,15 @@
 from rest_framework import generics, status
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, BasePermission
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from .serializers import UserSerializer, UserPreferencesSerializer
+from .serializers import UserSerializer, AdminUserSerializer, UserPreferencesSerializer
 from .models import UserPreferences
+
+
+class IsAdminRole(BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.role == 'ADMIN')
 
 User = get_user_model()
 
@@ -113,3 +118,38 @@ class UserPreferencesView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         preferences, created = UserPreferences.objects.get_or_create(user=self.request.user)
         return preferences
+
+
+class AdminUserListView(generics.ListAPIView):
+    """Admin: list all users."""
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def get_queryset(self):
+        return User.objects.all().order_by('email')
+
+
+class AdminUserDetailView(generics.RetrieveUpdateAPIView):
+    """Admin: get or update any user (email, display_name, role, is_active)."""
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsAuthenticated, IsAdminRole]
+    queryset = User.objects.all()
+
+
+class AdminResetPasswordView(generics.GenericAPIView):
+    """Admin: set a new password for any user without knowing the old one."""
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def post(self, request, pk):
+        user = generics.get_object_or_404(User, pk=pk)
+        new_password = request.data.get('new_password')
+
+        if not new_password or len(new_password) < 8:
+            return Response(
+                {'error': 'new_password muss mindestens 8 Zeichen lang sein.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user.set_password(new_password)
+        user.save()
+        return Response({'success': f'Passwort für {user.email} erfolgreich zurückgesetzt.'})

@@ -57,18 +57,26 @@ def run():
     today = date.today()
     RoughPlan.objects.get_or_create(goal=g1, year=today.year, month=today.month, defaults={"planned_hours": 60})
     
-    # TimeSlots (Detailplanung)
-    for i in range(1, 5):
+    # TimeSlots für die aktuelle Woche (Mo–Fr)
+    week_start = today - timedelta(days=today.weekday())  # Montag
+    week_slots = [
+        (0, 90, g1, "Gliederung überarbeiten"),
+        (1, 120, g1, "Bibliothek"),
+        (2, 90, g2, "Vokabeln"),
+        (3, 120, g1, "Bibliothek"),
+        (4, 60, g2, "Podcast hören"),
+    ]
+    for day_offset, minutes, goal, note in week_slots:
         TimeSlot.objects.get_or_create(
-            goal=g1, 
-            date=today + timedelta(days=i), 
-            defaults={"planned_minutes": 120, "note": "Bibliothek"}
+            goal=goal,
+            date=week_start + timedelta(days=day_offset),
+            defaults={"planned_minutes": minutes, "note": note}
         )
-    # Ein verpasster Slot für die Erinnerung
+    # Verpasster Slot letzte Woche
     TimeSlot.objects.get_or_create(
-        goal=g1, 
-        date=today - timedelta(days=1), 
-        defaults={"planned_minutes": 60, "note": "Hopsala"}
+        goal=g1,
+        date=today - timedelta(days=today.weekday() + 1),
+        defaults={"planned_minutes": 60, "note": "Nicht geschafft"}
     )
 
     # 4. Meilensteine

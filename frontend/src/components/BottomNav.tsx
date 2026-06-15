@@ -1,10 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { 
-  LayoutDashboard, 
-  Target, 
-  Clock, 
-  Settings 
-} from "lucide-react";
+import { LayoutDashboard, Target, Clock, Settings } from "lucide-react";
 
 const links = [
   { to: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
@@ -23,9 +18,7 @@ export default function BottomNav() {
           end={link.to === '/'}
           className={({ isActive }) =>
             `flex-1 flex flex-col items-center py-3 text-[10px] gap-1 transition-all ${
-              isActive
-                ? 'text-indigo-600 dark:text-indigo-400 font-bold'
-                : 'text-slate-400 dark:text-slate-500'
+              isActive ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-400 dark:text-slate-500'
             }`
           }
         >

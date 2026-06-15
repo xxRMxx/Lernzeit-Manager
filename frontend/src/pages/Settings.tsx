@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '../store/auth'
-import { 
+import {
   useLogout,
   useChangePassword,
   useChangeEmail,
@@ -8,10 +9,10 @@ import {
   useUserPreferences,
   useUpdateUserPreferences,
 } from '../api/auth'
-import { 
-  LogOut, 
-  Bell, 
-  Shield, 
+import {
+  LogOut,
+  Bell,
+  Shield,
   ChevronRight,
   GraduationCap,
   Lock,
@@ -19,6 +20,7 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  Users,
 } from "lucide-react";
 
 export default function Settings() {
@@ -150,12 +152,15 @@ export default function Settings() {
           <h2 className="text-xl font-bold text-slate-800 dark:text-foreground">{user?.display_name || 'Kein Anzeigename'}</h2>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{user?.email}</p>
           <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-3">
-            <span className="text-[10px] uppercase tracking-wider font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded-md border border-indigo-100 dark:border-indigo-900/30">
-              Student
-            </span>
-            <span className="text-[10px] uppercase tracking-wider font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 px-2 py-1 rounded-md border border-emerald-100 dark:border-emerald-900/30">
-              Verifiziert
-            </span>
+            {user?.role === 'ADMIN' ? (
+              <span className="text-[10px] uppercase tracking-wider font-bold bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 px-2 py-1 rounded-md border border-violet-100 dark:border-violet-900/30">
+                Administrator
+              </span>
+            ) : (
+              <span className="text-[10px] uppercase tracking-wider font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded-md border border-indigo-100 dark:border-indigo-900/30">
+                Benutzer
+              </span>
+            )}
           </div>
         </div>
         <button 
@@ -261,6 +266,28 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      {/* Admin section – only visible for Administrators */}
+      {user?.role === 'ADMIN' && (
+        <div className="bg-white dark:bg-card rounded-2xl border border-violet-100 dark:border-violet-900/30 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-violet-50 dark:border-violet-900/20 flex items-center gap-2">
+            <Shield size={18} className="text-violet-500" />
+            <h3 className="text-slate-700 dark:text-foreground font-bold">Administration</h3>
+          </div>
+          <Link
+            to="/admin"
+            className="w-full px-6 py-4 flex items-center justify-between hover:bg-violet-50/50 dark:hover:bg-violet-900/10 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center text-violet-600 dark:text-violet-400">
+                <Users size={16} />
+              </div>
+              <span className="text-sm font-medium text-slate-700 dark:text-foreground">Benutzerverwaltung</span>
+            </div>
+            <ChevronRight size={16} className="text-slate-300" />
+          </Link>
+        </div>
+      )}
 
       <button
         onClick={() => logout.mutate()}
