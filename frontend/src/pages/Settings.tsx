@@ -121,15 +121,18 @@ export default function Settings() {
   // Handle Profile Update
   const handleProfileUpdate = async () => {
     try {
+      const { token, setAuth } = useAuthStore.getState()
       const response = await fetch('/api/users/me/', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Token ${useAuthStore.getState().token}`,
+          Authorization: `Token ${token}`,
         },
         body: JSON.stringify({ display_name: profileForm.display_name }),
       })
       if (!response.ok) throw new Error('Failed to update profile')
+      const updatedUser = await response.json()
+      setAuth(token!, updatedUser)
       alert('Profil erfolgreich aktualisiert')
       setShowProfileModal(false)
     } catch (error: any) {
