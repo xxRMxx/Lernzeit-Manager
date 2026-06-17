@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useGoals, useCreateTimeSlot, useUpdateTimeSlot, useDeleteTimeSlot, useGlobalSessions, useGlobalTimeSlots, useCreateSession } from '../api/goals'
+import { useGoals, useCreateTimeSlot, useUpdateTimeSlot, useGlobalSessions, useGlobalTimeSlots, useCreateSession } from '../api/goals'
+import { useQueryClient } from '@tanstack/react-query'
 import client from '../api/client'
 import type { TimeSlot, Session } from '../api/goals'
 import { format } from "date-fns"
@@ -54,6 +55,7 @@ type SortOrder = 'asc' | 'desc';
 
 export default function Planning() {
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const { data: goals } = useGoals()
   const { data: sessions } = useGlobalSessions()
   const { data: timeSlots } = useGlobalTimeSlots()
@@ -79,7 +81,6 @@ export default function Planning() {
 
   const createTimeSlot = useCreateTimeSlot(newSessionGoalId)
   const updateTimeSlot = useUpdateTimeSlot(newSessionGoalId)
-  const deleteTimeSlot = useDeleteTimeSlot(editingSlot?.goal || '')
   const createSession = useCreateSession(logGoalId)
 
   const handleSort = (key: SortKey) => {
@@ -240,13 +241,15 @@ export default function Planning() {
 
   const handleDeleteItem = (item: UnifiedEntry) => {
     if (confirm('Möchtest du diesen Eintrag wirklich löschen?')) {
-        if (item.type === 'TIMESLOT') {
-            deleteTimeSlot.mutate(item.id);
-        } else {
-            client.delete(`/goals/${item.goal_id}/sessions/${item.id}/`).then(() => {
-                location.reload();
-            });
-        }
+        const url = item.type === 'TIMESLOT'
+            ? `/goals/${item.goal_id}/time-slots/${item.id}/`
+            : `/goals/${item.goal_id}/sessions/${item.id}/`
+        client.delete(url).then(() => {
+            qc.invalidateQueries({ queryKey: ['goals'] })
+            qc.invalidateQueries({ queryKey: ['sessions'] })
+            qc.invalidateQueries({ queryKey: ['time-slots'] })
+            qc.invalidateQueries({ queryKey: ['dashboard'] })
+        });
     }
   }
 

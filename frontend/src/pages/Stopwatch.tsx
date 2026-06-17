@@ -49,11 +49,16 @@ export default function Stopwatch() {
 
   const [tickingElapsed, setTickingElapsed] = useState(0)
 
+  // Always start in timer mode when navigating to this page
+  useEffect(() => {
+    setManualMode(false)
+  }, [setManualMode])
+
   // Sync state with search params
   useEffect(() => {
     const slotId = searchParams.get('slotId')
     if (slotId) setSelectedSlotId(slotId)
-    
+
     const goalId = searchParams.get('goalId')
     if (goalId) setSelectedGoalId(goalId)
   }, [searchParams, setSelectedSlotId, setSelectedGoalId])
@@ -120,6 +125,8 @@ export default function Stopwatch() {
     if (manualMode) {
       finalDuration = (Number(manualHours) * 3600) + (Number(manualMinutes) * 60)
       startTime = new Date().toISOString()
+    } else {
+      finalDuration = Math.ceil(finalDuration / 60) * 60
     }
 
     if (!selectedGoalId || finalDuration === 0) return
@@ -258,7 +265,7 @@ export default function Stopwatch() {
                   <option value="">Was hast du heute geplant?</option>
                   {timeSlots?.map((ts) => (
                     <option key={ts.id} value={ts.id}>
-                      {ts.note || 'Lernsession'} ({ts.planned_minutes}m)
+                      {ts.goal_title}: {ts.note || 'Lernsession'} ({ts.planned_minutes}m)
                     </option>
                   ))}
                 </select>

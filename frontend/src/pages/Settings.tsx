@@ -50,13 +50,10 @@ export default function Settings() {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showDeletePassword, setShowDeletePassword] = useState(false)
   const [learningReminders, setLearningReminders] = useState(preferences?.learning_reminders_enabled ?? true)
-  const [weeklyReport, setWeeklyReport] = useState(preferences?.weekly_report_enabled ?? false)
-
   // Update local state when preferences load
   useEffect(() => {
     if (preferences) {
       setLearningReminders(preferences.learning_reminders_enabled)
-      setWeeklyReport(preferences.weekly_report_enabled)
     }
   }, [preferences])
 
@@ -114,7 +111,6 @@ export default function Settings() {
     try {
       await updatePreferences.mutateAsync({
         learning_reminders_enabled: learningReminders,
-        weekly_report_enabled: weeklyReport,
       })
       alert('Einstellungen erfolgreich aktualisiert')
     } catch (error: any) {
@@ -195,25 +191,6 @@ export default function Settings() {
               >
                 <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${
                   learningReminders ? 'right-0.5' : 'left-0.5'
-                }`}></div>
-              </button>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-foreground">Wochenbericht</p>
-                <p className="text-xs text-slate-400">Statistiken per E-Mail erhalten</p>
-              </div>
-              <button 
-                onClick={() => {
-                  setWeeklyReport(!weeklyReport)
-                  handleUpdatePreferences()
-                }}
-                className={`w-10 h-5 rounded-full relative transition-all ${
-                  weeklyReport ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-muted'
-                }`}
-              >
-                <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${
-                  weeklyReport ? 'right-0.5' : 'left-0.5'
                 }`}></div>
               </button>
             </div>

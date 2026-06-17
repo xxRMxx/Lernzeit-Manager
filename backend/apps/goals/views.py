@@ -185,6 +185,10 @@ class TimeSlotDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return TimeSlot.objects.filter(goal__owner=self.request.user)
 
+    def perform_destroy(self, instance):
+        instance.completed_sessions.all().delete()
+        instance.delete()
+
 
 class GlobalSessionListView(generics.ListAPIView):
     serializer_class = SessionSerializer
