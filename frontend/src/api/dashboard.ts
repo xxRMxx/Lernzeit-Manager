@@ -14,6 +14,7 @@ export interface DashboardEntry {
 export interface DashboardData {
   goals: DashboardEntry[]
   streak: number
+  weekly_comparison: { day: string; soll: number; ist: number }[]
 }
 
 export function useDashboard() {

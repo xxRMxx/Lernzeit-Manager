@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useDashboard } from '../api/dashboard'
 import { useGoals, useGlobalSessions, useGlobalTimeSlots } from '../api/goals'
-import { format, addDays, startOfWeek, eachDayOfInterval } from "date-fns"
+import { format, addDays } from "date-fns"
 import { de } from "date-fns/locale"
 import { 
   History, 
@@ -65,28 +65,12 @@ export default function Dashboard() {
   const activeGoals = dashboardData?.goals || []
   const primaryGoal = activeGoals[0]
 
-  const dayLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
-  const weekDays = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) })
-
-  const todayStr = format(new Date(), 'yyyy-MM-dd')
-
-  const weekData = weekDays.map((day, i) => {
-    const dateStr = format(day, 'yyyy-MM-dd')
-    const plannedMinutes = timeSlots
-      ?.filter(ts => ts.date === dateStr)
-      .reduce((acc, ts) => acc + ts.planned_minutes, 0) ?? 0
-    const actualSeconds = sessions
-      ?.filter(s => format(new Date(s.started_at), 'yyyy-MM-dd') === dateStr)
-      .reduce((acc, s) => acc + s.duration_seconds, 0) ?? 0
-    return {
-      day: dayLabels[i],
-      soll: Math.round(plannedMinutes / 60 * 10) / 10,
-      ist: Math.round(actualSeconds / 3600 * 10) / 10,
-      isToday: dateStr === todayStr,
-      isPast: dateStr < todayStr,
-    }
-  })
+  const todayWeekday = (new Date().getDay() + 6) % 7 // Montag = 0
+  const weekData = (dashboardData?.weekly_comparison || []).map((entry, i) => ({
+    ...entry,
+    isToday: i === todayWeekday,
+    isPast: i < todayWeekday,
+  }))
 
   const totalIst = weekData.reduce((a, d) => a + d.ist, 0);
   const totalSoll = weekData.reduce((a, d) => a + d.soll, 0);

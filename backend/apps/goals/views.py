@@ -224,7 +224,7 @@ def goal_stats(request, goal_id):
 
 
 from django.utils import timezone
-from src.logic.statistics import streak_days
+from src.logic.statistics import streak_days, weekly_comparison
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -262,11 +262,32 @@ def dashboard(request):
         })
         
     # Calculate streak
-    user_sessions = Session.objects.filter(user=request.user).order_by('-started_at')
+    all_user_sessions = Session.objects.filter(user=request.user).order_by('-started_at')
     # Use the logic function for streak
-    streak = streak_days(tuple(user_sessions), timezone.localdate())
+    streak = streak_days(tuple(all_user_sessions), timezone.localdate())
+
+    # Weekly comparison
+    today = timezone.localdate()
+    start_of_week = today - timezone.timedelta(days=today.weekday())
+    end_of_week = start_of_week + timezone.timedelta(days=6)
+
+    weekly_sessions = Session.objects.filter(
+        user=request.user,
+        started_at__date__range=[start_of_week, end_of_week]
+    )
+    weekly_timeslots = TimeSlot.objects.filter(
+        goal__owner=request.user,
+        date__range=[start_of_week, end_of_week]
+    )
+
+    comparison = weekly_comparison(
+        tuple(weekly_sessions),
+        tuple(weekly_timeslots),
+        start_of_week
+    )
 
     return Response({
         'goals': result_goals,
-        'streak': streak
+        'streak': streak,
+        'weekly_comparison': comparison
     })
