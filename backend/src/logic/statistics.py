@@ -7,6 +7,45 @@ from src.types.goal import LearningGoal
 from src.types.milestone import Milestone
 
 
+def weekly_comparison(
+    sessions: tuple,
+    timeslots: tuple,
+    start_date: date
+) -> list[dict]:
+    """
+    Pure: Vergleich von geplanten (TimeSlots) und tatsächlichen (Sessions) Stunden
+    für eine Woche ab dem start_date.
+    Gibt eine Liste von dicts zurück: [{"day": "Mo", "soll": 2.0, "ist": 1.5}, ...]
+    """
+    days_labels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+    result = []
+    
+    for i in range(7):
+        current_date = start_date + timedelta(days=i)
+        
+        # Soll (planned) from timeslots (planned_minutes)
+        soll_minutes = sum(ts.planned_minutes for ts in timeslots if ts.date == current_date)
+        soll_hours = round(soll_minutes / 60, 2)
+        
+        # Ist (actual) from sessions (duration_seconds)
+        # Note: started_at can be datetime or date depending on source
+        ist_seconds = 0
+        for s in sessions:
+            s_date = s.started_at.date() if hasattr(s.started_at, 'date') else s.started_at
+            if s_date == current_date:
+                ist_seconds += s.duration_seconds
+        
+        ist_hours = round(ist_seconds / 3600, 2)
+        
+        result.append({
+            "day": days_labels[i],
+            "soll": soll_hours,
+            "ist": ist_hours
+        })
+        
+    return result
+
+
 def total_hours_all_goals(sessions: tuple[StudySession, ...]) -> float:
     """Pure: gesamte Lernzeit über alle Ziele in Stunden."""
     return reduce(lambda acc, s: acc + s.duration_seconds, sessions, 0) / 3600

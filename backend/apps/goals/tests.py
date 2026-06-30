@@ -106,3 +106,42 @@ class GoalIntegrationTests(APITestCase):
         response = self.client.delete(detail_url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Session.objects.filter(id=session_id).exists())
+
+    def test_dashboard_with_comparison(self):
+        """Verify that the dashboard returns the weekly comparison data."""
+        from apps.goals.models import TimeSlot
+        self.client.force_authenticate(user=self.user1)
+        
+        today = timezone.localdate()
+        start_of_week = today - timezone.timedelta(days=today.weekday())
+        
+        # Create a TimeSlot (Soll) for Monday
+        TimeSlot.objects.create(
+            goal=self.goal_private,
+            date=start_of_week,
+            planned_minutes=120
+        )
+        
+        # Create a Session (Ist) for today
+        Session.objects.create(
+            goal=self.goal_private,
+            user=self.user1,
+            started_at=timezone.now(),
+            duration_seconds=3600
+        )
+        
+        url = reverse('dashboard')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('weekly_comparison', response.data)
+        self.assertEqual(len(response.data['weekly_comparison']), 7)
+        
+        # Check Monday (index 0)
+        mo_data = response.data['weekly_comparison'][0]
+        self.assertEqual(mo_data['day'], 'Mo')
+        self.assertEqual(mo_data['soll'], 2.0) # 120 min = 2 hours
+        
+        # Check today's data
+        today_idx = today.weekday()
+        today_data = response.data['weekly_comparison'][today_idx]
+        self.assertEqual(today_data['ist'], 1.0) # 3600s = 1 hour
