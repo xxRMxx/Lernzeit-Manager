@@ -12,6 +12,7 @@ ENV/
 .vscode/
 .idea/
 db.sqlite3
+GEMINI.md
 
 # Frontend
 frontend/dist/
